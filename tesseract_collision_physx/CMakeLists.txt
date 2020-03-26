@@ -50,7 +50,6 @@ add_executable(${PROJECT_NAME}_tesseract_physx src/tesseract_physx_test.cpp)
 target_link_libraries(${PROJECT_NAME}_tesseract_physx ${PROJECT_NAME})
 tesseract_target_compile_options(${PROJECT_NAME}_tesseract_physx PRIVATE)
 tesseract_clang_tidy(${PROJECT_NAME}_tesseract_physx)
-target_compile_definitions(${PROJECT_NAME}_tesseract_physx PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test")
 
 tesseract_configure_package(${PROJECT_NAME} ${PROJECT_NAME}_demo ${PROJECT_NAME}_split_sim ${PROJECT_NAME}_tesseract_physx)
 
@@ -65,3 +64,9 @@ install(DIRECTORY include/${PROJECT_NAME}
 # This is a workaround to let the ROS2 version of pluginlib find tesseract_collision's plugins, since tesseract_collision is a non-ROS CMake package.
 # ADDITIONAL REQUIREMENT: The installed path must be added to the AMENT_PREFIX_PATH environment variable at runtime, which is outside the scope of CMakeLists.txt.
 file(WRITE ${CMAKE_INSTALL_PREFIX}/share/ament_index/resource_index/packages/${PROJECT_NAME} "")
+
+if (TESSERACT_ENABLE_TESTING)
+  enable_testing()
+  tesseract_add_run_tests_target()
+  add_subdirectory(test)
+endif()
