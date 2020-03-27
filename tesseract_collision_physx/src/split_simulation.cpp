@@ -233,14 +233,14 @@ int main(int, const char*const*)
   global_tf.p = physx::PxVec3(0, 0, 0);
   global_tf.q = physx::PxQuat(0, 0, 1, 0);
 
-  physx::PxRigidStatic* sphere = physx::PxCreateStatic(*phy.getPhysics(), global_tf, physx::PxSphereGeometry(physx::PxReal(0.5)), *phy.getMaterial());
-  sphere->setName(link_name.c_str());
-  std::printf("%s\n", sphere->getName());
-  setupFiltering(phy, sphere, static_cast<physx::PxU32>(FilterGroup::eSTATIC), static_cast<physx::PxU32>(FilterGroup::eKINEMATIC));
-  phy.getScene()->addActor(*sphere);
+  physx::PxRigidStatic* geom = physx::PxCreateStatic(*phy.getPhysics(), global_tf, physx::PxBoxGeometry(physx::PxReal(0.5), physx::PxReal(0.5), physx::PxReal(0.5)), *phy.getMaterial());
+  geom->setName(link_name.c_str());
+  std::printf("%s\n", geom->getName());
+  setupFiltering(phy, geom, static_cast<physx::PxU32>(FilterGroup::eSTATIC), static_cast<physx::PxU32>(FilterGroup::eKINEMATIC));
+  phy.getScene()->addActor(*geom);
 
   physx::PxTransform kin_global_tf, kin_shape_tf;
-  kin_global_tf.p = physx::PxVec3(0, 0, 0.7f);
+  kin_global_tf.p = physx::PxVec3(0.2f, 0, 0);
   kin_global_tf.q = physx::PxQuat(0, 0, 1, 0);
   kin_shape_tf.p = physx::PxVec3(0, 0, 0);
   kin_shape_tf.q = physx::PxQuat(0, 0, 1, 0);
@@ -257,14 +257,14 @@ int main(int, const char*const*)
 
   for (int i = 0; i < 5; ++i)
   {
-    std::printf("%d!\n", i);
-    phy.getScene()->simulate(0.0001f);
-    phy.getScene()->fetchResults(true);
-
     physx::PxTransform update_tf;
     update_tf.p = physx::PxVec3(0, 0, 0.7f - ((physx::PxReal(i) + 1.f) * 0.1f));
     update_tf.q = physx::PxQuat(0, 0, 1, 0);
     kinematic_sphere->setKinematicTarget(update_tf);
+
+    std::printf("%d!\n", i);
+    phy.getScene()->simulate(0.0001f);
+    phy.getScene()->fetchResults(true);
   }
   std::printf("Done!\n");
   return 0;

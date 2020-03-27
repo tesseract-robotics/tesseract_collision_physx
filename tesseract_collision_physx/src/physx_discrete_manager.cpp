@@ -17,6 +17,8 @@
 #include <tesseract_collision_physx/physx_collision_object_wrapper.h>
 #include <tesseract_collision_physx/types.h>
 
+static const physx::PxReal SIMULATION_TIME = physx::PxReal(0.0001); // TODO: How small can this be?
+
 namespace tesseract_collision
 {
 
@@ -25,7 +27,6 @@ static const tesseract_common::VectorIsometry3d EMPTY_COLLISION_SHAPES_TRANSFORM
 
 PhysxDiscreteManager::PhysxDiscreteManager() : physx_(std::make_shared<TesseractPhysx>())
 {
-
 }
 
 DiscreteContactManager::Ptr PhysxDiscreteManager::clone() const
@@ -62,6 +63,7 @@ bool PhysxDiscreteManager::addCollisionObject(const std::string& name,
   if (new_cow != nullptr)
   {
     link2cow_[new_cow->getName()] = new_cow;
+    dirty_ = true;
     return true;
   }
 
@@ -157,6 +159,7 @@ void PhysxDiscreteManager::setCollisionObjectsTransform(const std::string& name,
   {
     PhysxCOW::Ptr& cow = it->second;
     cow->setWorldTransform(pose);
+    dirty_ = true;
   }
 }
 
@@ -215,13 +218,30 @@ void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn) { fn_ = 
 IsContactAllowedFn PhysxDiscreteManager::getIsContactAllowedFn() const { return fn_; }
 void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const ContactTestType& type)
 {
+  // If you add a new collision object or set its transform you must call simulation twice for some reason.
+  if (dirty_)
+  {
+    dummy_.clear();
+    ContactTestData& cd = physx_->getContactTestData();
+    cd.fn = fn_;
+    cd.active = &active_;
+    cd.type = tesseract_collision::ContactTestType::CLOSEST; // TODO: tesseract_collision::ContactTestType::FIRST
+    cd.res = &dummy_;
+    cd.done = false;
+
+    physx_->getScene()->simulate(SIMULATION_TIME);
+    physx_->getScene()->fetchResults(true);
+    dirty_ = false;
+  }
+
   ContactTestData& cd = physx_->getContactTestData();
   cd.fn = fn_;
   cd.active = &active_;
   cd.type = type;
   cd.res = &collisions;
+  cd.done = false;
 
-  physx_->getScene()->simulate(0.0001f); // TODO: How small can this be?
+  physx_->getScene()->simulate(SIMULATION_TIME);
   physx_->getScene()->fetchResults(true);
 }
 

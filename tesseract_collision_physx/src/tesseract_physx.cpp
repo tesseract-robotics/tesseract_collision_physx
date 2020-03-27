@@ -69,6 +69,8 @@ TesseractPhysx::~TesseractPhysx()
     PX_RELEASE(transport);
   }
 
+  PxCloseExtensions();
+
   PX_RELEASE(foundation_);
 }
 

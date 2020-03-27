@@ -87,6 +87,8 @@ private:
   IsContactAllowedFn fn_;           /**< @brief The is allowed collision function */
   TesseractPhysx::Ptr physx_;       /**< @brief The tesseract physx container */
   Link2PhysxCOW link2cow_;          /**< @brief A map of all (static and active) physx collision objects managed */
+  bool dirty_ {false};              /**< @brief Indicates that simulation must be ran twice */
+  ContactResultMap dummy_;          /**< @brief A dummy contact results used when simulation need to be ran twice */
 };
 
 }  // namespace tesseract_collision

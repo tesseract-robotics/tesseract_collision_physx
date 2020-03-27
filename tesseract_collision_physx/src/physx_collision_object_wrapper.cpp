@@ -20,6 +20,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_collision_physx/physx_collision_object_wrapper.h>
 #include <tesseract_collision_physx/utils.h>
+#include <tesseract_collision_physx/types.h>
 
 namespace tesseract_collision
 {
@@ -71,6 +72,15 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
       physx_->getScene()->addActor(*dyn);
     }
   }
+}
+
+PhysxCollisionObjectWrapper::~PhysxCollisionObjectWrapper()
+{
+  for(std::size_t c = 0; c < collision_objects_.size(); ++c)
+  {
+    PX_RELEASE(collision_objects_[c]);
+  }
+  collision_objects_.clear();
 }
 
 const std::string& PhysxCollisionObjectWrapper::getName() const

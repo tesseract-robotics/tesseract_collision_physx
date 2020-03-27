@@ -44,6 +44,8 @@ public:
                               tesseract_common::VectorIsometry3d shape_poses,
                               TesseractPhysx::Ptr physx);
 
+  ~PhysxCollisionObjectWrapper();
+
   physx::PxFilterData filter_data;
   bool enabled;
 

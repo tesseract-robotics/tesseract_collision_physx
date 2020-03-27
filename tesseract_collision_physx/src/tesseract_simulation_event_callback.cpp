@@ -66,8 +66,8 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
   for(physx::PxU32 i=0; i < nbPairs; i++)
   {
     const physx::PxContactPair& cp = pairs[i];
-    const auto* cd0 = static_cast<const PhysxCollisionObjectWrapper*>(cp.shapes[0]->userData);
-    const auto* cd1 = static_cast<const PhysxCollisionObjectWrapper*>(cp.shapes[1]->userData);
+    const auto* cd0 = static_cast<const PhysxCollisionObjectWrapper*>(cp.shapes[0]->getActor()->userData);
+    const auto* cd1 = static_cast<const PhysxCollisionObjectWrapper*>(cp.shapes[1]->getActor()->userData);
 
     physx::PxU32 nbContacts = pairs[i].extractContacts(contacts, bufferSize);
     for(physx::PxU32 j=0; j < nbContacts; j++)
@@ -92,13 +92,15 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
       Eigen::Isometry3d tf1_inv = tf1.inverse();
 
       ContactResult contact;
+      contact.distance = static_cast<double>(contacts[j].separation);
+      contact.normal = convertPhysxToEigen(-1 * contacts[j].normal);
       contact.link_names[0] = cd0->getName();
       contact.link_names[1] = cd1->getName();
 //        contact.shape_id[0] = colObj0Wrap->getCollisionShape()->getUserIndex();
 //        contact.shape_id[1] = colObj1Wrap->getCollisionShape()->getUserIndex();
       contact.subshape_id[0] = static_cast<int>(contacts[j].internalFaceIndex0);
       contact.subshape_id[1] = static_cast<int>(contacts[j].internalFaceIndex1);
-      contact.nearest_points[0] = convertPhysxToEigen(contacts[j].position);
+      contact.nearest_points[0] = convertPhysxToEigen(contacts[j].position) - (contact.distance * contact.normal);
       contact.nearest_points[1] = convertPhysxToEigen(contacts[j].position);
       contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
       contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
@@ -106,8 +108,6 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
       contact.transform[1] = tf1;
       contact.type_id[0] = cd0->getTypeID();
       contact.type_id[1] = cd1->getTypeID();
-      contact.distance = static_cast<double>(contacts[j].separation);
-      contact.normal = convertPhysxToEigen(-1 * contacts[j].normal);
 
       processResult(physx_->getContactTestData(), contact, pc, found);
     }
