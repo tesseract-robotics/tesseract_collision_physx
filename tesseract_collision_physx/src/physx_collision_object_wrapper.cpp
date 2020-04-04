@@ -15,6 +15,7 @@
 
 #include <tesseract_common/macros.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <console_bridge/console.h>
 #include <PxPhysicsAPI.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
@@ -29,18 +30,18 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
                                                          const int& type_id,
                                                          CollisionShapesConst shapes,
                                                          tesseract_common::VectorIsometry3d shape_poses,
-                                                         TesseractPhysx::Ptr physx)
+                                                         TesseractPhysxScene::Ptr physx_scene)
   : name_(std::move(name))
   , type_id_(type_id)
   , shapes_(std::move(shapes))
   , shape_poses_(std::move(shape_poses))
-  , physx_(std::move(physx))
+  , physx_scene_(std::move(physx_scene))
 {
   assert(!shapes_.empty());
   assert(!shape_poses_.empty());
   assert(!name_.empty());
   assert(shapes_.size() == shape_poses_.size());
-  assert(physx_ != nullptr);
+  assert(physx_scene_ != nullptr);
 
   collision_geometries_.reserve(shapes_.size());
   collision_objects_.reserve(shapes_.size());
@@ -51,8 +52,8 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
   for (std::size_t i = 0; i < shapes_.size(); ++i)
   {
     bool has_valid_shapes = true;
-    std::vector<TesseractPhysxGeometryHolder> subshapes = createShapePrimitive(*physx_, shapes_[i]);
-    physx::PxRigidDynamic* actor = physx_->getPhysics()->createRigidDynamic(physx::PxTransform(physx::PxIdentity));
+    std::vector<TesseractPhysxGeometryHolder> subshapes = createShapePrimitive(*physx_scene_, shapes_[i]);
+    physx::PxRigidDynamic* actor = physx_scene_->getTesseractPhysx()->getPhysics()->createRigidDynamic(physx::PxTransform(physx::PxIdentity));
     actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
     physx::PxTransform shape_tf = convertEigenToPhysx(shape_poses_[i]);
 
@@ -64,7 +65,7 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
         // See physx::PxCreateKinematic documentation
         bool isDynGeom = shape.first.any().getType() == physx::PxGeometryType::eBOX || shape.first.any().getType() == physx::PxGeometryType::eSPHERE || shape.first.any().getType() == physx::PxGeometryType::eCAPSULE || shape.first.any().getType() == physx::PxGeometryType::eCONVEXMESH;
 
-        physx::PxShape* s = physx_->getPhysics()->createShape(shape.first.any(), *physx_->getMaterial(), true);
+        physx::PxShape* s = physx_scene_->getTesseractPhysx()->getPhysics()->createShape(shape.first.any(), *physx_scene_->getTesseractPhysx()->getMaterial(), true);
         if(!s)
         {
           has_valid_shapes = false;
@@ -97,7 +98,11 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
       collision_objects_.push_back(actor);
 
 //      physx_->setupFiltering(dyn, static_cast<physx::PxU32>(PhysxFilterGroup::eKINEMATIC), static_cast<physx::PxU32>(PhysxFilterGroup::eSTATIC));
-      physx_->getScene()->addActor(*actor);
+      physx_scene_->getScene()->addActor(*actor);
+    }
+    else
+    {
+      CONSOLE_BRIDGE_logError("Link was unable to add shape to PhysX for link: %s", name.c_str());
     }
 
   }
@@ -146,8 +151,8 @@ const tesseract_common::VectorIsometry3d& PhysxCollisionObjectWrapper::getCollis
 void PhysxCollisionObjectWrapper::setWorldTransform(const Eigen::Isometry3d& pose)
 {
   world_pose_ = pose;
-  for (auto co : collision_objects_)
-    co->setKinematicTarget(convertEigenToPhysx(pose));
+  for (auto& co : collision_objects_)
+    co->setKinematicTarget(convertEigenToPhysx(world_pose_));
 }
 
 void PhysxCollisionObjectWrapper::setContactDistance(physx::PxReal dist)
@@ -181,10 +186,10 @@ std::vector<physx::PxRigidDynamic*>& PhysxCollisionObjectWrapper::getCollisionOb
   return collision_objects_;
 }
 
-std::shared_ptr<PhysxCollisionObjectWrapper> PhysxCollisionObjectWrapper::clone(TesseractPhysx::Ptr tesseract_physx) const
+std::shared_ptr<PhysxCollisionObjectWrapper> PhysxCollisionObjectWrapper::clone(TesseractPhysxScene::Ptr physx_scene) const
 {
   // TODO: Need to serialize the Rigid Body, store in this class and use during cloning which will be faster.
-  auto clone_cow = std::make_shared<PhysxCollisionObjectWrapper>(name_, type_id_, shapes_, shape_poses_, tesseract_physx);
+  auto clone_cow = std::make_shared<PhysxCollisionObjectWrapper>(name_, type_id_, shapes_, shape_poses_, physx_scene);
 
   clone_cow->filter_data = filter_data;
   clone_cow->enabled = enabled;
@@ -208,7 +213,7 @@ int PhysxCollisionObjectWrapper::getShapeIndex(const physx::PxRigidDynamic* co) 
 void PhysxCollisionObjectWrapper::updateFilterData()
 {
   for (auto co : collision_objects_)
-    physx_->setupFiltering(co, filter_data);
+    physx_scene_->setupFiltering(co, filter_data);
 }
 
 
@@ -241,7 +246,7 @@ PhysxCOW::Ptr createPhysxCollisionObject(const std::string& name,
                                          const CollisionShapesConst& shapes,
                                          const tesseract_common::VectorIsometry3d& shape_poses,
                                          bool enabled,
-                                         TesseractPhysx::Ptr physx)
+                                         const TesseractPhysxScene::Ptr& physx_scene)
 {
   // dont add object that does not have geometry
   if (shapes.empty() || shape_poses.empty() || (shapes.size() != shape_poses.size()))
@@ -250,7 +255,7 @@ PhysxCOW::Ptr createPhysxCollisionObject(const std::string& name,
     return nullptr;
   }
 
-  PhysxCOW::Ptr new_cow = std::make_shared<PhysxCOW>(name, type_id, shapes, shape_poses, physx);
+  PhysxCOW::Ptr new_cow = std::make_shared<PhysxCOW>(name, type_id, shapes, shape_poses, physx_scene);
 
   new_cow->enabled = enabled;
   CONSOLE_BRIDGE_logDebug("Created collision object for link %s", new_cow->getName().c_str());

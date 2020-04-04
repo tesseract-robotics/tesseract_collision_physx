@@ -17,7 +17,7 @@ public:
   }
 };
 
-std::vector<physx::PxRigidStatic*> addCollisionObjects(tesseract_collision::TesseractPhysx& phy, bool /*use_single_link*/, bool /*use_convex_mesh*/)
+std::vector<physx::PxRigidStatic*> addCollisionObjects(tesseract_collision::TesseractPhysxScene& scene, bool /*use_single_link*/, bool /*use_convex_mesh*/)
 {
   std::vector<physx::PxRigidStatic*> spheres;
   tesseract_common::VectorIsometry3d link_poses;
@@ -32,10 +32,10 @@ std::vector<physx::PxRigidStatic*> addCollisionObjects(tesseract_collision::Tess
         global_tf.p = physx::PxVec3(static_cast<physx::PxReal>(x), static_cast<physx::PxReal>(y), static_cast<physx::PxReal>(z));
         global_tf.q = physx::PxQuat(0, 0, 1, 0);
 
-        physx::PxRigidStatic* sphere = physx::PxCreateStatic(*phy.getPhysics(), global_tf, physx::PxSphereGeometry(physx::PxReal(0.25)), *phy.getMaterial());
+        physx::PxRigidStatic* sphere = physx::PxCreateStatic(*scene.getTesseractPhysx()->getPhysics(), global_tf, physx::PxSphereGeometry(physx::PxReal(0.25)), *scene.getTesseractPhysx()->getMaterial());
         sphere->setName(link_name.c_str());
         std::printf("%s\n", sphere->getName());
-        phy.getScene()->addActor(*sphere);
+        scene.getScene()->addActor(*sphere);
         spheres.push_back(sphere);
       }
     }
@@ -57,9 +57,9 @@ std::vector<physx::PxTransform> getTransforms(std::size_t num_poses)
   return poses;
 }
 
-void test1(tesseract_collision::TesseractPhysx& phy)
+void test1(tesseract_collision::TesseractPhysxScene& scene)
 {
-  std::vector<physx::PxRigidStatic*> spheres = addCollisionObjects(phy, false, false);
+  std::vector<physx::PxRigidStatic*> spheres = addCollisionObjects(scene, false, false);
 
   std::vector<physx::PxTransform> tv = getTransforms(50);
 
@@ -73,7 +73,7 @@ void test1(tesseract_collision::TesseractPhysx& phy)
 
   for (const auto& trans : tv)
   {
-    bool in_collision = phy.getScene()->overlap(sphere.sphere(), trans, cb);
+    bool in_collision = scene.getScene()->overlap(sphere.sphere(), trans, cb);
 
     if (in_collision)
     {
@@ -90,17 +90,17 @@ void test1(tesseract_collision::TesseractPhysx& phy)
   delete touches;
 }
 
-void test2(tesseract_collision::TesseractPhysx& phy)
+void test2(tesseract_collision::TesseractPhysxScene& scene)
 {
   std::string link_name = "static_link";
   physx::PxTransform global_tf;
   global_tf.p = physx::PxVec3(0, 0, 1.0);
   global_tf.q = physx::PxQuat(0, 0, 1, 0);
 
-  physx::PxRigidStatic* sphere = physx::PxCreateStatic(*phy.getPhysics(), global_tf, physx::PxSphereGeometry(physx::PxReal(0.25)), *phy.getMaterial());
+  physx::PxRigidStatic* sphere = physx::PxCreateStatic(*scene.getTesseractPhysx()->getPhysics(), global_tf, physx::PxSphereGeometry(physx::PxReal(0.25)), *scene.getTesseractPhysx()->getMaterial());
   sphere->setName(link_name.c_str());
   std::printf("%s\n", sphere->getName());
-  phy.getScene()->addActor(*sphere);
+  scene.getScene()->addActor(*sphere);
 
 
   physx::PxGeometryHolder test_sphere(physx::PxSphereGeometry(physx::PxReal(0.5)));
@@ -111,7 +111,7 @@ void test2(tesseract_collision::TesseractPhysx& phy)
   physx::PxOverlapHit* touches = new physx::PxOverlapHit();
   TesseractOverlapCallback cb(touches, 2);
 
-  bool in_collision = phy.getScene()->overlap(test_sphere.sphere(), t, cb);
+  bool in_collision = scene.getScene()->overlap(test_sphere.sphere(), t, cb);
 
   if (in_collision)
   {
@@ -126,8 +126,9 @@ void test2(tesseract_collision::TesseractPhysx& phy)
 
 int main(int, const char*const*)
 {
-  tesseract_collision::TesseractPhysx phy;
-  test2(phy);
+  auto phy = std::make_shared<tesseract_collision::TesseractPhysx>();
+  tesseract_collision::TesseractPhysxScene scene(phy);
+  test2(scene);
 
 //  physx::PxRigidStatic* ground_plane = physx::PxCreatePlane(*phy.getPhysics(), physx::PxPlane(0,1,0,0), *phy.getMaterial());
 //  ground_plane->setName("base_link");

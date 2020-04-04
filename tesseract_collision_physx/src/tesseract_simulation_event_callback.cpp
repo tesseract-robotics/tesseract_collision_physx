@@ -15,14 +15,14 @@
 
 #include <tesseract_collision_physx/tesseract_simulation_event_callback.h>
 #include <tesseract_collision_physx/physx_collision_object_wrapper.h>
-#include <tesseract_collision_physx/tesseract_physx.h>
+#include <tesseract_collision_physx/tesseract_physx_scene.h>
 #include <tesseract_collision_physx/utils.h>
 
 namespace tesseract_collision
 {
 
-TesseractSimulationEventCallback::TesseractSimulationEventCallback(TesseractPhysx* physx)
-  : physx_(physx)
+TesseractSimulationEventCallback::TesseractSimulationEventCallback(TesseractPhysxScene *physx_scene)
+  : physx_scene_(physx_scene)
 {
 }
 
@@ -70,8 +70,8 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
 
     ObjectPairKey pc = getObjectPairKey(cd0->getName(), cd1->getName());
 
-    const auto& it = physx_->getContactTestData().res->find(pc);
-    bool found = (it != physx_->getContactTestData().res->end());
+    const auto& it = physx_scene_->getContactTestData().res->find(pc);
+    bool found = (it != physx_scene_->getContactTestData().res->end());
 
     //    size_t l = 0;
     //    if (found)
@@ -122,7 +122,7 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
     contact.nearest_points[0] = contact.nearest_points[1] - (contact.distance * contact.normal);
     contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
     contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
-    processResult(physx_->getContactTestData(), contact, pc, found);
+    processResult(physx_scene_->getContactTestData(), contact, pc, found);
   }
 }
 }

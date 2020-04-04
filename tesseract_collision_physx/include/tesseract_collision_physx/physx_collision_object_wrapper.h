@@ -25,7 +25,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_collision/core/types.h>
-#include <tesseract_collision_physx/tesseract_physx.h>
+#include <tesseract_collision_physx/tesseract_physx_scene.h>
 #include <tesseract_collision_physx/types.h>
 
 namespace tesseract_collision
@@ -43,7 +43,7 @@ public:
                               const int& type_id,
                               CollisionShapesConst shapes,
                               tesseract_common::VectorIsometry3d shape_poses,
-                              TesseractPhysx::Ptr physx);
+                              TesseractPhysxScene::Ptr physx_scene);
 
   ~PhysxCollisionObjectWrapper();
 
@@ -67,7 +67,7 @@ public:
   const Eigen::Isometry3d& getWorldTransform() const;
   const std::vector<physx::PxRigidDynamic*>& getCollisionObjects() const;
   std::vector<physx::PxRigidDynamic*>& getCollisionObjects();
-  std::shared_ptr<PhysxCollisionObjectWrapper> clone(TesseractPhysx::Ptr tesseract_physx) const;
+  std::shared_ptr<PhysxCollisionObjectWrapper> clone(TesseractPhysxScene::Ptr physx_scene) const;
 
 
 
@@ -93,7 +93,7 @@ protected:
   tesseract_common::VectorIsometry3d shape_poses_;
   std::vector<std::vector<TesseractPhysxGeometryHolder>> collision_geometries_;
   std::vector<physx::PxRigidDynamic*> collision_objects_;
-  TesseractPhysx::Ptr physx_;
+  TesseractPhysxScene::Ptr physx_scene_;
 };
 
 using PhysxCOW = PhysxCollisionObjectWrapper;
@@ -105,7 +105,7 @@ PhysxCOW::Ptr createPhysxCollisionObject(const std::string& name,
                                          const CollisionShapesConst& shapes,
                                          const tesseract_common::VectorIsometry3d& shape_poses,
                                          bool enabled,
-                                         TesseractPhysx::Ptr physx);
+                                         const TesseractPhysxScene::Ptr &physx_scene);
 }
 
 #endif // TESSERACT_COLLISION_PHYSX_COLLISION_OBJECT_WRAPPER_H

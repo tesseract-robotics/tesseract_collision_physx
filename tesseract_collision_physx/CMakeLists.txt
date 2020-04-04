@@ -15,6 +15,7 @@ link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/debug)
 set(PHYSX_LIBRARIES libPhysXExtensions_static_64.a libPhysX_static_64.a libPhysXPvdSDK_static_64.a libPhysXVehicle_static_64.a libPhysXCharacterKinematic_static_64.a libPhysXCooking_static_64.a libPhysXCommon_static_64.a libPhysXFoundation_static_64.a)
 add_library(${PROJECT_NAME} SHARED
   src/tesseract_physx.cpp
+  src/tesseract_physx_scene.cpp
   src/tesseract_simulation_event_callback.cpp
   src/tesseract_simulation_filter_callback.cpp
   src/physx_collision_object_wrapper.cpp

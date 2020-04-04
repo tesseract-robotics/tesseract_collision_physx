@@ -25,17 +25,22 @@ namespace tesseract_collision
 static const CollisionShapesConst EMPTY_COLLISION_SHAPES_CONST;
 static const tesseract_common::VectorIsometry3d EMPTY_COLLISION_SHAPES_TRANSFORMS;
 
-PhysxDiscreteManager::PhysxDiscreteManager() : physx_(std::make_shared<TesseractPhysx>())
+PhysxDiscreteManager::PhysxDiscreteManager() : physx_scene_(std::make_shared<TesseractPhysxScene>(std::make_shared<TesseractPhysx>()))
 {
+}
+
+PhysxDiscreteManager::PhysxDiscreteManager(TesseractPhysx::Ptr tesseract_physx) : physx_scene_(std::make_shared<TesseractPhysxScene>(std::move(tesseract_physx)))
+{
+
 }
 
 DiscreteContactManager::Ptr PhysxDiscreteManager::clone() const
 {
-  auto manager = std::make_shared<PhysxDiscreteManager>();
+  auto manager = std::make_shared<PhysxDiscreteManager>(physx_scene_->getTesseractPhysx());
 
   for (const auto& cow : link2cow_)
   {
-    PhysxCOW::Ptr new_cow = cow.second->clone(manager->physx_);
+    PhysxCOW::Ptr new_cow = cow.second->clone(manager->physx_scene_);
 
     new_cow->setWorldTransform(cow.second->getWorldTransform());
 
@@ -56,7 +61,7 @@ bool PhysxDiscreteManager::addCollisionObject(const std::string& name,
                                               const tesseract_common::VectorIsometry3d& shape_poses,
                                               bool enabled)
 {
-  PhysxCOW::Ptr new_cow = createPhysxCollisionObject(name, mask_id, shapes, shape_poses, enabled, physx_);
+  PhysxCOW::Ptr new_cow = createPhysxCollisionObject(name, mask_id, shapes, shape_poses, enabled, physx_scene_);
   if (new_cow != nullptr)
   {
     addCollisionObject(new_cow);
@@ -92,7 +97,7 @@ bool PhysxDiscreteManager::removeCollisionObject(const std::string& name)
   if (it != link2cow_.end())
   {
     for (auto co : it->second->getCollisionObjects())
-      physx_->getScene()->removeActor(*co);
+      physx_scene_->getScene()->removeActor(*co);
 
     collision_objects_.erase(std::find(collision_objects_.begin(), collision_objects_.end(), name));
     link2cow_.erase(name);
@@ -206,7 +211,7 @@ const std::vector<std::string>& PhysxDiscreteManager::getActiveCollisionObjects(
 void PhysxDiscreteManager::setContactDistanceThreshold(double contact_distance)
 {
   contact_distance_ = static_cast<physx::PxReal>(contact_distance);
-  physx_->getContactTestData().contact_distance = contact_distance;
+  physx_scene_->getContactTestData().contact_distance = contact_distance;
 
   for (auto& co : link2cow_)
     co.second->setContactDistance(contact_distance_ / physx::PxReal(2.));
@@ -216,7 +221,7 @@ double PhysxDiscreteManager::getContactDistanceThreshold() const { return static
 void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn)
 {
   fn_ = fn;
-  physx_->setIsContactAllowedFn(fn_);
+  physx_scene_->setIsContactAllowedFn(fn_);
 }
 
 IsContactAllowedFn PhysxDiscreteManager::getIsContactAllowedFn() const { return fn_; }
@@ -226,27 +231,27 @@ void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const Conta
   if (dirty_)
   {
     dummy_.clear();
-    ContactTestData& cd = physx_->getContactTestData();
+    ContactTestData& cd = physx_scene_->getContactTestData();
     cd.fn = fn_;
     cd.active = &active_;
     cd.type = tesseract_collision::ContactTestType::ALL; // TODO: tesseract_collision::ContactTestType::FIRST
     cd.res = &dummy_;
     cd.done = false;
 
-    physx_->getScene()->simulate(SIMULATION_TIME);
-    physx_->getScene()->fetchResults(true);
+    physx_scene_->getScene()->simulate(SIMULATION_TIME);
+    physx_scene_->getScene()->fetchResults(true);
     dirty_ = false;
   }
 
-  ContactTestData& cd = physx_->getContactTestData();
+  ContactTestData& cd = physx_scene_->getContactTestData();
   cd.fn = fn_;
   cd.active = &active_;
   cd.type = type;
   cd.res = &collisions;
   cd.done = false;
 
-  physx_->getScene()->simulate(SIMULATION_TIME);
-  physx_->getScene()->fetchResults(true);
+  physx_scene_->getScene()->simulate(SIMULATION_TIME);
+  physx_scene_->getScene()->fetchResults(true);
 }
 
 void PhysxDiscreteManager::addCollisionObject(const PhysxCOW::Ptr& cow)

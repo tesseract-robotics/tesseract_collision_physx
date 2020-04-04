@@ -16,7 +16,7 @@
 #define TESSERACT_COLLISION_PHYSX_DISCRETE_MANAGER_H
 
 #include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_collision_physx/tesseract_physx.h>
+#include <tesseract_collision_physx/tesseract_physx_scene.h>
 #include <tesseract_collision_physx/physx_collision_object_wrapper.h>
 
 namespace tesseract_collision
@@ -30,6 +30,8 @@ public:
   using ConstPtr = std::shared_ptr<const PhysxDiscreteManager>;
 
   PhysxDiscreteManager();
+  PhysxDiscreteManager(TesseractPhysx::Ptr tesseract_physx);
+
   ~PhysxDiscreteManager() override = default;
   PhysxDiscreteManager(const PhysxDiscreteManager&) = delete;
   PhysxDiscreteManager& operator=(const PhysxDiscreteManager&) = delete;
@@ -39,6 +41,14 @@ public:
   static std::string name() { return "PhysxDiscreteManager"; }
   static PhysxDiscreteManager::Ptr create() { return std::make_shared<PhysxDiscreteManager>(); }
 
+  /**
+   * @brief Clone the PhysxDiscreteManager.
+   *
+   * Currently the clone creates a new PhysX Scene, but share the same TesseractPhysx object. It is unclear if this is
+   * an issue when scenes are being operated on different threads.
+   *
+   * @return Clone of PhysxDiscreteManager
+   */
   DiscreteContactManager::Ptr clone() const override;
 
   bool addCollisionObject(const std::string& name,
@@ -94,7 +104,7 @@ private:
   std::vector<std::string> collision_objects_; /**< @brief A list of the collision objects */
   physx::PxReal contact_distance_;             /**< @brief The contact distance threshold */
   IsContactAllowedFn fn_;                      /**< @brief The is allowed collision function */
-  TesseractPhysx::Ptr physx_;                  /**< @brief The tesseract physx container */
+  TesseractPhysxScene::Ptr physx_scene_;       /**< @brief The tesseract physx scene container */
   Link2PhysxCOW link2cow_;                     /**< @brief A map of all (static and active) physx collision objects managed */
   bool dirty_ {false};                         /**< @brief Indicates that simulation must be ran twice */
   ContactResultMap dummy_;                     /**< @brief A dummy contact results used when simulation need to be ran twice */

@@ -19,16 +19,19 @@
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <memory>
 #include <string>
+#include <thread>
 #include <PxPhysicsAPI.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
-
-#include <tesseract_collision_physx/tesseract_simulation_event_callback.h>
-#include <tesseract_collision_physx/tesseract_simulation_filter_callback.h>
-#include <tesseract_collision/core/types.h>
 
 namespace tesseract_collision
 {
 
+/**
+ * @brief Tesseract Physx only allowrf one copy per thread.
+ *
+ * This contains PhysX components that are only allowed once per thread. It is currently unclear if this is allowed to
+ * be shared between threads.
+ */
 class TesseractPhysx
 {
 public:
@@ -37,6 +40,7 @@ public:
 
   TesseractPhysx();
   virtual ~TesseractPhysx();
+
   TesseractPhysx(const TesseractPhysx&) = delete;
   TesseractPhysx& operator=(const TesseractPhysx&) = delete;
   TesseractPhysx(TesseractPhysx&&) = delete;
@@ -45,18 +49,10 @@ public:
   physx::PxFoundation* getFoundation();
   physx::PxPhysics* getPhysics();
   physx::PxCooking* getCooking();
-  physx::PxScene* getScene();
   physx::PxMaterial* getMaterial() const;
 
   physx::PxDefaultAllocator& getAllocator();
   const physx::PxDefaultErrorCallback& getErrorCallback();
-
-  ContactTestData& getContactTestData();
-
-  void setupFiltering(physx::PxRigidActor* actor,
-                      const physx::PxFilterData& filter_data);
-
-  void setIsContactAllowedFn(IsContactAllowedFn fn);
 
 private:
   physx::PxDefaultAllocator		default_allocator_;
@@ -65,18 +61,10 @@ private:
   physx::PxFoundation*           foundation_ {nullptr};
   physx::PxPhysics*              physics_ {nullptr};
   physx::PxCooking*              cooking_ {nullptr};
-  physx::PxScene*                scene_ {nullptr};
-  physx::PxDefaultCpuDispatcher* dispatcher_{nullptr};
-  physx::PxMaterial*				     material_{nullptr};
-  physx::PxPvd*                  pvd_{nullptr};
+  physx::PxPvd*                  pvd_ {nullptr};
   std::string                    pvd_host_ {"127.0.0.1"};
-
-  ContactTestData contact_data_;
-
-  TesseractSimulationEventCallback::Ptr event_cb_;
-  TesseractSimulationFilterCallback::Ptr filter_cb_;
-
-  void initialize();
+  physx::PxMaterial*				     material_{nullptr};
+  std::thread::id                thread_id_;
 };
 }
 #endif // TESSERACT_COLLISION_PHYSX_TESSERACT_PHYSX_H

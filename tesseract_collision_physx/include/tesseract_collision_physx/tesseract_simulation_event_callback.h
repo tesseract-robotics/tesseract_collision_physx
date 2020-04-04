@@ -29,14 +29,14 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 namespace tesseract_collision
 {
 
-class TesseractPhysx;
+class TesseractPhysxScene;
 
 class TesseractSimulationEventCallback : public physx::PxSimulationEventCallback
 {
 public:
   using Ptr = std::shared_ptr<TesseractSimulationEventCallback>;
 
-  TesseractSimulationEventCallback(TesseractPhysx *physx);
+  TesseractSimulationEventCallback(TesseractPhysxScene *physx_scene);
   ~TesseractSimulationEventCallback() override = default;
   TesseractSimulationEventCallback(const TesseractSimulationEventCallback&) = delete;
   TesseractSimulationEventCallback& operator=(const TesseractSimulationEventCallback&) = delete;
@@ -57,7 +57,7 @@ public:
                  physx::PxU32 nbPairs) override;
 
 private:
-  TesseractPhysx *physx_;
+  TesseractPhysxScene *physx_scene_;
 };
 }
 
