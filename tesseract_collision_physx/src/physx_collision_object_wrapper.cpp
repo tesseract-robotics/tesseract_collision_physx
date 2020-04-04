@@ -50,27 +50,56 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
   // TODO: Should these be different for GPU and CPU? Documentation suggest that they should be.
   for (std::size_t i = 0; i < shapes_.size(); ++i)
   {
-    physx::PxGeometryHolder subshape = createShapePrimitive(*physx_, shapes_[i]);
-    if (subshape.getType() != physx::PxGeometryType::Enum::eINVALID)
+    bool has_valid_shapes = true;
+    std::vector<TesseractPhysxGeometryHolder> subshapes = createShapePrimitive(*physx_, shapes_[i]);
+    physx::PxRigidDynamic* actor = physx_->getPhysics()->createRigidDynamic(physx::PxTransform(physx::PxIdentity));
+    actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
+    physx::PxTransform shape_tf = convertEigenToPhysx(shape_poses_[i]);
+
+    long cnt = 0;
+    for (auto& shape : subshapes)
     {
-      collision_geometries_.push_back(subshape);
+      if (shape.first.getType() != physx::PxGeometryType::Enum::eINVALID)
+      {
+        // See physx::PxCreateKinematic documentation
+        bool isDynGeom = shape.first.any().getType() == physx::PxGeometryType::eBOX || shape.first.any().getType() == physx::PxGeometryType::eSPHERE || shape.first.any().getType() == physx::PxGeometryType::eCAPSULE || shape.first.any().getType() == physx::PxGeometryType::eCONVEXMESH;
 
-      physx::PxTransform shape_tf = convertEigenToPhysx(shape_poses_[i]);
-      physx::PxTransform world_tf = convertEigenToPhysx(Eigen::Isometry3d::Identity());
-      physx::PxRigidDynamic* dyn = physx::PxCreateKinematic(*physx_->getPhysics(),
-                                                             world_tf,
-                                                             subshape.any(),
-                                                             *physx_->getMaterial(),
-                                                             physx::PxReal(0.1),
-                                                             shape_tf);
+        physx::PxShape* s = physx_->getPhysics()->createShape(shape.first.any(), *physx_->getMaterial(), true);
+        if(!s)
+        {
+          has_valid_shapes = false;
+          continue;
+        }
 
-      dyn->userData = this;
-      dyn->setName((name + "_" + std::to_string(i)).c_str());
-      collision_objects_.push_back(dyn);
+        s->setLocalPose(shape_tf * shape.second);
+
+        if(!isDynGeom)
+          s->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+
+        ++cnt;
+        actor->attachShape(*s);
+
+        s->release();
+      }
+      else
+      {
+        has_valid_shapes = false;
+      }
+    }
+
+    if (has_valid_shapes)
+    {
+      collision_geometries_.push_back(subshapes);
+      actor->setMass(1.f);
+      actor->setMassSpaceInertiaTensor(physx::PxVec3(1.f,1.f,1.f));
+      actor->userData = this;
+      actor->setName((name + "_" + std::to_string(i)).c_str());
+      collision_objects_.push_back(actor);
 
 //      physx_->setupFiltering(dyn, static_cast<physx::PxU32>(PhysxFilterGroup::eKINEMATIC), static_cast<physx::PxU32>(PhysxFilterGroup::eSTATIC));
-      physx_->getScene()->addActor(*dyn);
+      physx_->getScene()->addActor(*actor);
     }
+
   }
 }
 
@@ -188,7 +217,7 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
                                                          const int& type_id,
                                                          CollisionShapesConst shapes,
                                                          tesseract_common::VectorIsometry3d shape_poses,
-                                                         std::vector<physx::PxGeometryHolder> collision_geometries,
+                                                         std::vector<std::vector<TesseractPhysxGeometryHolder> > collision_geometries,
                                                          const std::vector<physx::PxRigidDynamic*>& collision_objects)
   : name_(std::move(name))
   , type_id_(type_id)

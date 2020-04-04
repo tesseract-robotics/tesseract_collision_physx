@@ -48,13 +48,17 @@ physx::PxFilterFlags contactReportFilterShader(physx::PxFilterObjectAttributes a
   // trigger the contact callback for pairs (A,B) where
   // the filtermask of A contains the ID of B and vice versa.
   if((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
+  {
       pairFlags |= (physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_PERSISTS);
+//      return physx::PxFilterFlag::eCALLBACK; // To call the is collision allowed function
+  }
 
   return physx::PxFilterFlag::eDEFAULT;
 }
 
 
 TesseractPhysx::TesseractPhysx() { initialize(); }
+
 TesseractPhysx::~TesseractPhysx()
 {
   PX_RELEASE(scene_);
@@ -99,6 +103,11 @@ void TesseractPhysx::setupFiltering(physx::PxRigidActor* actor,
   default_allocator_.deallocate(shapes);
 }
 
+void TesseractPhysx::setIsContactAllowedFn(IsContactAllowedFn fn)
+{
+  filter_cb_->setIsContactAllowedFn(fn);
+}
+
 void TesseractPhysx::initialize()
 {
   foundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, default_allocator_, error_callback_);
@@ -129,6 +138,7 @@ void TesseractPhysx::initialize()
 
   // Define event callback function for processing contacts
   event_cb_ = std::make_shared<TesseractSimulationEventCallback>(this);
+  filter_cb_ = std::make_shared<TesseractSimulationFilterCallback>(contact_data_);
 
   physx::PxSceneDesc scene_desc(physics_->getTolerancesScale());
   scene_desc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
@@ -138,6 +148,7 @@ void TesseractPhysx::initialize()
   scene_desc.staticKineFilteringMode = physx::PxPairFilteringMode::eKEEP; // So static-kin constacts will be reported
   scene_desc.simulationEventCallback = event_cb_.get();
   scene_desc.filterShader	= contactReportFilterShader;
+//  scene_desc.filterCallback = filter_cb_.get();
   scene_ = physics_->createScene(scene_desc);
 
   physx::PxPvdSceneClient* pvdClient = scene_->getScenePvdClient();

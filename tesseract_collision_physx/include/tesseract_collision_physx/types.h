@@ -25,6 +25,8 @@ namespace tesseract_collision
 
 #define PX_RELEASE(x)	if(x)	{ (x)->release(); (x) = nullptr;}
 
+using TesseractPhysxGeometryHolder = std::pair<physx::PxGeometryHolder, physx::PxTransform>;
+
 enum class PhysxFilterGroup
 {
   NONE       = (1 << 0),

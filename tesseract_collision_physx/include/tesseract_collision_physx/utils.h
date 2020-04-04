@@ -26,6 +26,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_collision/core/types.h>
 #include <tesseract_collision/core/common.h>
 #include <tesseract_collision_physx/tesseract_physx.h>
+#include <tesseract_collision_physx/types.h>
 
 namespace tesseract_collision
 {
@@ -35,34 +36,35 @@ Eigen::Isometry3d convertPhysxToEigen(const physx::PxTransform& tf);
 Eigen::Vector3d convertPhysxToEigen(const physx::PxVec3& p);
 Eigen::Quaterniond convertPhysxToEigen(const physx::PxQuat& q);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Plane::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Plane::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Box::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Box::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Sphere::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Sphere::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Cylinder::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Cylinder::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Cone::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Cone::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Capsule::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Capsule::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::Mesh::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Mesh::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const tesseract_geometry::ConvexMesh::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::ConvexMesh::ConstPtr& geom);
 
-//inline physx::PxGeometryHolder createShapePrimitive(const tesseract_geometry::Octree::ConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::Octree::ConstPtr& geom);
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx,
-                                             const CollisionShapeConstPtr& geom);
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const CollisionShapeConstPtr& geom);
 
 ///**
 // * @brief Update collision objects filters

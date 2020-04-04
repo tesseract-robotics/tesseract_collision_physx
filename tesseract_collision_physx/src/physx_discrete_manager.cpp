@@ -31,24 +31,21 @@ PhysxDiscreteManager::PhysxDiscreteManager() : physx_(std::make_shared<Tesseract
 
 DiscreteContactManager::Ptr PhysxDiscreteManager::clone() const
 {
-  auto manager= std::make_shared<PhysxDiscreteManager>();
+  auto manager = std::make_shared<PhysxDiscreteManager>();
 
-//  for (const auto& cow : link2cow_)
-//  {
-//    PhysxCOW::Ptr new_cow = cow.second->clone();
+  for (const auto& cow : link2cow_)
+  {
+    PhysxCOW::Ptr new_cow = cow.second->clone(manager->physx_);
 
-//    assert(new_cow->getCollisionShape());
-//    assert(new_cow->getCollisionShape()->getShapeType() != CUSTOM_CONVEX_SHAPE_TYPE);
+    new_cow->setWorldTransform(cow.second->getWorldTransform());
 
-//    new_cow->setWorldTransform(cow.second->getWorldTransform());
+    new_cow->setContactDistance(contact_distance_);
+    manager->addCollisionObject(new_cow);
+  }
 
-//    new_cow->setContactDistance(contact_distance_);
-//    manager->addCollisionObject(new_cow);
-//  }
-
-//  manager->setActiveCollisionObjects(active_);
-//  manager->setContactDistanceThreshold(contact_distance_);
-//  manager->setIsContactAllowedFn(fn_);
+  manager->setActiveCollisionObjects(active_);
+  manager->setContactDistanceThreshold(getContactDistanceThreshold());
+  manager->setIsContactAllowedFn(fn_);
 
   return std::move(manager);
 }
@@ -62,8 +59,7 @@ bool PhysxDiscreteManager::addCollisionObject(const std::string& name,
   PhysxCOW::Ptr new_cow = createPhysxCollisionObject(name, mask_id, shapes, shape_poses, enabled, physx_);
   if (new_cow != nullptr)
   {
-    link2cow_[new_cow->getName()] = new_cow;
-    dirty_ = true;
+    addCollisionObject(new_cow);
     return true;
   }
 
@@ -92,15 +88,13 @@ bool PhysxDiscreteManager::hasCollisionObject(const std::string& name) const
 
 bool PhysxDiscreteManager::removeCollisionObject(const std::string& name)
 {
-  UNUSED(name);
-  assert(false);
-
   auto it = link2cow_.find(name);  // Levi TODO: Should these check be removed?
   if (it != link2cow_.end())
   {
     for (auto co : it->second->getCollisionObjects())
       physx_->getScene()->removeActor(*co);
 
+    collision_objects_.erase(std::find(collision_objects_.begin(), collision_objects_.end(), name));
     link2cow_.erase(name);
     return true;
   }
@@ -177,6 +171,11 @@ void PhysxDiscreteManager::setCollisionObjectsTransform(const tesseract_common::
     setCollisionObjectsTransform(transform.first, transform.second);
 }
 
+const std::vector<std::string>& PhysxDiscreteManager::getCollisionObjects() const
+{
+  return collision_objects_;
+}
+
 void PhysxDiscreteManager::setActiveCollisionObjects(const std::vector<std::string>& names)
 {
   active_ = names;
@@ -210,11 +209,16 @@ void PhysxDiscreteManager::setContactDistanceThreshold(double contact_distance)
   physx_->getContactTestData().contact_distance = contact_distance;
 
   for (auto& co : link2cow_)
-    co.second->setContactDistance(contact_distance_);
+    co.second->setContactDistance(contact_distance_ / physx::PxReal(2.));
 }
 
 double PhysxDiscreteManager::getContactDistanceThreshold() const { return static_cast<double>(contact_distance_); }
-void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn) { fn_ = fn; }
+void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn)
+{
+  fn_ = fn;
+  physx_->setIsContactAllowedFn(fn_);
+}
+
 IsContactAllowedFn PhysxDiscreteManager::getIsContactAllowedFn() const { return fn_; }
 void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const ContactTestType& type)
 {
@@ -225,7 +229,7 @@ void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const Conta
     ContactTestData& cd = physx_->getContactTestData();
     cd.fn = fn_;
     cd.active = &active_;
-    cd.type = tesseract_collision::ContactTestType::CLOSEST; // TODO: tesseract_collision::ContactTestType::FIRST
+    cd.type = tesseract_collision::ContactTestType::ALL; // TODO: tesseract_collision::ContactTestType::FIRST
     cd.res = &dummy_;
     cd.done = false;
 
@@ -243,6 +247,13 @@ void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const Conta
 
   physx_->getScene()->simulate(SIMULATION_TIME);
   physx_->getScene()->fetchResults(true);
+}
+
+void PhysxDiscreteManager::addCollisionObject(const PhysxCOW::Ptr& cow)
+{
+  link2cow_[cow->getName()] = cow;
+  collision_objects_.push_back(cow->getName());
+  dirty_ = true;
 }
 
 }  // namespace tesseract_collision

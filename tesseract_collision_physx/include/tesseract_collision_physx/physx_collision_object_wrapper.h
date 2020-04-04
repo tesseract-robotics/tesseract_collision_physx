@@ -26,6 +26,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_collision/core/types.h>
 #include <tesseract_collision_physx/tesseract_physx.h>
+#include <tesseract_collision_physx/types.h>
 
 namespace tesseract_collision
 {
@@ -82,7 +83,7 @@ protected:
                               const int& type_id,
                               CollisionShapesConst shapes,
                               tesseract_common::VectorIsometry3d shape_poses,
-                              std::vector<physx::PxGeometryHolder> collision_geometries,
+                              std::vector<std::vector<TesseractPhysxGeometryHolder>> collision_geometries,
                               const std::vector<physx::PxRigidDynamic*>& collision_objects);
 
   std::string name_;             // name of the collision object
@@ -90,7 +91,7 @@ protected:
   Eigen::Isometry3d world_pose_; /**< @brief Collision Object World Transformation */
   CollisionShapesConst shapes_;
   tesseract_common::VectorIsometry3d shape_poses_;
-  std::vector<physx::PxGeometryHolder> collision_geometries_;
+  std::vector<std::vector<TesseractPhysxGeometryHolder>> collision_geometries_;
   std::vector<physx::PxRigidDynamic*> collision_objects_;
   TesseractPhysx::Ptr physx_;
 };

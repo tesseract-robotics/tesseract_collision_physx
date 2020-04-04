@@ -16,6 +16,7 @@ set(PHYSX_LIBRARIES libPhysXExtensions_static_64.a libPhysX_static_64.a libPhysX
 add_library(${PROJECT_NAME} SHARED
   src/tesseract_physx.cpp
   src/tesseract_simulation_event_callback.cpp
+  src/tesseract_simulation_filter_callback.cpp
   src/physx_collision_object_wrapper.cpp
   src/utils.cpp
   src/physx_discrete_manager.cpp)

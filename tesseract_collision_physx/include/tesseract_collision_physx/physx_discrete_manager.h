@@ -67,6 +67,8 @@ public:
 
   void setCollisionObjectsTransform(const tesseract_common::TransformMap& transforms) override;
 
+  const std::vector<std::string>& getCollisionObjects() const override;
+
   void setActiveCollisionObjects(const std::vector<std::string>& names) override;
 
   const std::vector<std::string>& getActiveCollisionObjects() const override;
@@ -81,14 +83,23 @@ public:
 
   void contactTest(ContactResultMap& collisions, const ContactTestType& type) override;
 
+  /**
+   * @brief Add a collision object to the manager
+   * @param cow The tesseract physx collision object
+   */
+  void addCollisionObject(const PhysxCOW::Ptr& cow);
+
 private:
-  std::vector<std::string> active_; /**< @brief A list of the active collision objects */
-  physx::PxReal contact_distance_;  /**< @brief The contact distance threshold */
-  IsContactAllowedFn fn_;           /**< @brief The is allowed collision function */
-  TesseractPhysx::Ptr physx_;       /**< @brief The tesseract physx container */
-  Link2PhysxCOW link2cow_;          /**< @brief A map of all (static and active) physx collision objects managed */
-  bool dirty_ {false};              /**< @brief Indicates that simulation must be ran twice */
-  ContactResultMap dummy_;          /**< @brief A dummy contact results used when simulation need to be ran twice */
+  std::vector<std::string> active_;            /**< @brief A list of the active collision objects */
+  std::vector<std::string> collision_objects_; /**< @brief A list of the collision objects */
+  physx::PxReal contact_distance_;             /**< @brief The contact distance threshold */
+  IsContactAllowedFn fn_;                      /**< @brief The is allowed collision function */
+  TesseractPhysx::Ptr physx_;                  /**< @brief The tesseract physx container */
+  Link2PhysxCOW link2cow_;                     /**< @brief A map of all (static and active) physx collision objects managed */
+  bool dirty_ {false};                         /**< @brief Indicates that simulation must be ran twice */
+  ContactResultMap dummy_;                     /**< @brief A dummy contact results used when simulation need to be ran twice */
+
+  friend PhysxCollisionObjectWrapper;
 };
 
 }  // namespace tesseract_collision

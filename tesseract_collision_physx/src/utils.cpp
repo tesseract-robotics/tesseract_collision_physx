@@ -17,6 +17,7 @@
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <boost/thread/mutex.hpp>
 #include <memory>
+#include <cmath>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_collision_physx/tesseract_physx.h>
@@ -53,6 +54,96 @@ Eigen::Isometry3d convertPhysxToEigen(const physx::PxTransform& tf)
   return m;
 }
 
+/** @brief Create vertices that represent a cone */
+tesseract_common::VectorVector3d createConeVertices(double radius, double height)
+{
+  double desired_error = 0.0005; // meters
+  double dtheta = 2 * std::acos((radius-desired_error)/radius);
+  std::size_t v_count = static_cast<std::size_t>(std::ceil(2 * M_PI / dtheta));
+  dtheta = 2 * M_PI / static_cast<double>(v_count);
+
+  tesseract_common::VectorVector3d vertices;
+  vertices.reserve(v_count + 1);
+  double theta = 0;
+  while (theta < (2 * M_PI - (dtheta/2.)))
+  {
+    Eigen::Vector3d v;
+    v(0) = radius * std::cos(theta);
+    v(1) = radius * std::sin(theta);
+    v(2) = -height / 2.;
+    vertices.push_back(v);
+    theta+=dtheta;
+  }
+
+  Eigen::Vector3d v;
+  v(0) = 0;
+  v(1) = 0;
+  v(2) = height / 2.;
+  vertices.push_back(v);
+
+  return vertices;
+}
+
+/** @brief Create vertices that represent a cylinder */
+tesseract_common::VectorVector3d createCylinderVertices(double radius, double height)
+{
+  double desired_error = 0.0005; // meters
+  double dtheta = 2 * std::acos((radius-desired_error)/radius);
+  std::size_t v_count = static_cast<std::size_t>(std::ceil(2 * M_PI / dtheta));
+  dtheta = 2 * M_PI / static_cast<double>(v_count);
+
+  tesseract_common::VectorVector3d vertices;
+  vertices.reserve(v_count + 1);
+  double theta = 0;
+  while (theta < (2 * M_PI - (dtheta/2.)))
+  {
+    Eigen::Vector3d v;
+    v(0) = radius * std::cos(theta);
+    v(1) = radius * std::sin(theta);
+    v(2) = -height / 2.;
+    vertices.push_back(v);
+
+    Eigen::Vector3d vt = v;
+    vt(2) = height / 2.;
+    vertices.push_back(vt);
+
+    theta+=dtheta;
+  }
+
+  return vertices;
+}
+
+physx::PxGeometryHolder createConvexShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_common::VectorVector3d& v)
+{
+  std::size_t v_count = v.size();
+
+  physx::PxVec3 vertices[v_count];
+  for (std::size_t i = 0; i < static_cast<std::size_t>(v_count); ++i)
+  {
+    vertices[i].x = static_cast<physx::PxReal>(v[i].x());
+    vertices[i].y = static_cast<physx::PxReal>(v[i].y());
+    vertices[i].z = static_cast<physx::PxReal>(v[i].z());
+  }
+
+  physx::PxConvexMeshDesc convex_desc;
+  convex_desc.points.count = static_cast<physx::PxU32>(v_count);
+  convex_desc.points.stride = sizeof(physx::PxVec3);
+  convex_desc.points.data = vertices;
+  convex_desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+  physx::PxDefaultMemoryOutputStream buf;
+  physx::PxConvexMeshCookingResult::Enum result;
+  if(!tesseract_physx.getCooking()->cookConvexMesh(convex_desc, buf, &result))
+      return physx::PxGeometryHolder();
+
+  physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+  physx::PxConvexMesh* convex_mesh = tesseract_physx.getPhysics()->createConvexMesh(input);
+  if (convex_mesh == nullptr)
+    return physx::PxGeometryHolder();
+
+  return physx::PxGeometryHolder(physx::PxConvexMeshGeometry(convex_mesh)); // TODO: Who is responsible for releasing triangle_mesh;
+}
+
 //physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::Plane::ConstPtr& geom)
 //{
 //  physx::PxPlane plane(float(geom->getA()), float(geom->getB()), float(geom->getC()), float(geom->getD()));
@@ -63,34 +154,41 @@ Eigen::Isometry3d convertPhysxToEigen(const physx::PxTransform& tf)
 //  return gh;
 //}
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Box::ConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Box::ConstPtr& geom)
 {
-  return physx::PxGeometryHolder(physx::PxBoxGeometry(static_cast<physx::PxReal>(geom->getX() / 2), static_cast<physx::PxReal>(geom->getY() / 2), static_cast<physx::PxReal>(geom->getZ() / 2)));
+  auto g = physx::PxGeometryHolder(physx::PxBoxGeometry(static_cast<physx::PxReal>(geom->getX() / 2), static_cast<physx::PxReal>(geom->getY() / 2), static_cast<physx::PxReal>(geom->getZ() / 2)));
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Sphere::ConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Sphere::ConstPtr& geom)
 {
-  return physx::PxGeometryHolder(physx::PxSphereGeometry(static_cast<physx::PxReal>(geom->getRadius())));
+  auto g = physx::PxGeometryHolder(physx::PxSphereGeometry(static_cast<physx::PxReal>(geom->getRadius())));
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Cylinder::ConstPtr& /*geom*/)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::Cylinder::ConstPtr& geom)
 {
-//  return CollisionGeometryPtr(new fcl::Cylinderd(geom->getRadius(), geom->getLength()));
-  return physx::PxGeometryHolder();
+  tesseract_common::VectorVector3d vertices = createCylinderVertices(geom->getRadius(), geom->getLength());
+  auto g = createConvexShapePrimitive(tesseract_physx, vertices);
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Cone::ConstPtr& /*geom*/)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::Cone::ConstPtr& geom)
 {
-//  return CollisionGeometryPtr(new fcl::Coned(geom->getRadius(), geom->getLength()));
-  return physx::PxGeometryHolder();
+  tesseract_common::VectorVector3d vertices = createConeVertices(geom->getRadius(), geom->getLength());
+  auto g = createConvexShapePrimitive(tesseract_physx, vertices);
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Capsule::ConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& /*tesseract_physx*/, const tesseract_geometry::Capsule::ConstPtr& geom)
 {
-  return physx::PxGeometryHolder(physx::PxCapsuleGeometry(static_cast<physx::PxReal>(geom->getRadius()), static_cast<physx::PxReal>(geom->getLength() / 2)));
+  auto g = physx::PxGeometryHolder(physx::PxCapsuleGeometry(static_cast<physx::PxReal>(geom->getRadius()), static_cast<physx::PxReal>(geom->getLength() / 2)));
+  // The default orientation of a capsule for Physx is along the x-axs, so we must rotate around the y-axis so it
+  // is along the z-axis.
+  return {std::make_pair(g, physx::PxTransform(physx::PxQuat(physx::PxHalfPi, physx::PxVec3(0,1,0))))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::Mesh::ConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::Mesh::ConstPtr& geom)
 {
   int v_count = geom->getVerticeCount();
   int t_count = geom->getTriangleCount();
@@ -124,63 +222,89 @@ physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, co
   physx::PxTriangleMeshCookingResult::Enum write_result;
   bool status = tesseract_physx.getCooking()->cookTriangleMesh(mesh_desc, write_buffer, &write_result);
   if(!status)
-    return physx::PxGeometryHolder();
+    return {std::make_pair(physx::PxGeometryHolder(), physx::PxTransform(physx::PxIdentity))};
 
   physx::PxDefaultMemoryInputData read_buffer(write_buffer.getData(), write_buffer.getSize());
   physx::PxTriangleMesh* triangle_mesh = tesseract_physx.getPhysics()->createTriangleMesh(read_buffer);
-  return physx::PxGeometryHolder(physx::PxTriangleMeshGeometry(triangle_mesh)); // TODO: Who is responsible for releasing triangle_mesh;
+
+  auto g = physx::PxGeometryHolder(physx::PxTriangleMeshGeometry(triangle_mesh)); // TODO: Who is responsible for releasing triangle_mesh;
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
 }
 
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, const tesseract_geometry::ConvexMesh::ConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const tesseract_geometry::ConvexMesh::ConstPtr& geom)
 {
-  int v_count = geom->getVerticeCount();
-  const tesseract_common::VectorVector3d& v = *(geom->getVertices());
+  auto g = createConvexShapePrimitive(tesseract_physx, *(geom->getVertices()));
+  return {std::make_pair(g, physx::PxTransform(physx::PxIdentity))};
+}
 
-  physx::PxVec3 vertices[v_count];
-  for (std::size_t i = 0; i < static_cast<std::size_t>(v_count); ++i)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& /*tesseract_physx*/,
+                                                               const tesseract_geometry::Octree::ConstPtr& geom)
+{
+  const octomap::OcTree& octree = *(geom->getOctree());
+  double occupancy_threshold = octree.getOccupancyThres();
+
+  std::vector<TesseractPhysxGeometryHolder> geometries;
+  geometries.reserve(octree.size());
+
+  switch (geom->getSubType())
   {
-    vertices[i].x = static_cast<physx::PxReal>(v[i].x());
-    vertices[i].y = static_cast<physx::PxReal>(v[i].y());
-    vertices[i].z = static_cast<physx::PxReal>(v[i].z());
+    case tesseract_geometry::Octree::SubType::BOX:
+    {
+      for (auto it = octree.begin(static_cast<unsigned char>(octree.getTreeDepth())), end = octree.end(); it != end;
+           ++it)
+      {
+        if (it->getOccupancy() >= occupancy_threshold)
+        {
+          double size = it.getSize();
+          physx::PxTransform geom_tf(static_cast<physx::PxReal>(it.getX()), static_cast<physx::PxReal>(it.getY()), static_cast<physx::PxReal>(it.getZ()));
+          auto l = static_cast<physx::PxReal>(size / 2.0);
+          auto g = physx::PxGeometryHolder(physx::PxBoxGeometry(l, l, l));
+          geometries.emplace_back(g, geom_tf);
+        }
+      }
+      return geometries;
+    }
+    case tesseract_geometry::Octree::SubType::SPHERE_INSIDE:
+    {
+      for (auto it = octree.begin(static_cast<unsigned char>(octree.getTreeDepth())), end = octree.end(); it != end;
+           ++it)
+      {
+        if (it->getOccupancy() >= occupancy_threshold)
+        {
+          double size = it.getSize();
+          physx::PxTransform geom_tf(static_cast<physx::PxReal>(it.getX()), static_cast<physx::PxReal>(it.getY()), static_cast<physx::PxReal>(it.getZ()));
+          auto g = physx::PxGeometryHolder(physx::PxSphereGeometry(static_cast<physx::PxReal>((size / 2))));
+          geometries.emplace_back(g, geom_tf);
+        }
+      }
+      return geometries;
+    }
+    case tesseract_geometry::Octree::SubType::SPHERE_OUTSIDE:
+    {
+      for (auto it = octree.begin(static_cast<unsigned char>(octree.getTreeDepth())), end = octree.end(); it != end;
+           ++it)
+      {
+        if (it->getOccupancy() >= occupancy_threshold)
+        {
+          double size = it.getSize();
+          physx::PxTransform geom_tf(static_cast<physx::PxReal>(it.getX()), static_cast<physx::PxReal>(it.getY()), static_cast<physx::PxReal>(it.getZ()));
+          auto g = physx::PxGeometryHolder(physx::PxSphereGeometry(static_cast<physx::PxReal>(std::sqrt(2 * ((size / 2) * (size / 2))))));
+          geometries.emplace_back(g, geom_tf);
+        }
+      }
+      return geometries;
+    }
   }
 
-  physx::PxConvexMeshDesc convex_desc;
-  convex_desc.points.count = static_cast<physx::PxU32>(v_count);
-  convex_desc.points.stride = sizeof(physx::PxVec3);
-  convex_desc.points.data = vertices;
-  convex_desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+  CONSOLE_BRIDGE_logError("This Physx shape type (%d) is not supported for geometry octree",
+                          static_cast<int>(geom->getSubType()));
 
-  physx::PxDefaultMemoryOutputStream buf;
-  physx::PxConvexMeshCookingResult::Enum result;
-  if(!tesseract_physx.getCooking()->cookConvexMesh(convex_desc, buf, &result))
-      return physx::PxGeometryHolder();
-
-  physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-  physx::PxConvexMesh* convex_mesh = tesseract_physx.getPhysics()->createConvexMesh(input);
-  if (convex_mesh == nullptr)
-    return physx::PxGeometryHolder();
-
-  return physx::PxGeometryHolder(physx::PxConvexMeshGeometry(convex_mesh)); // TODO: Who is responsible for releasing triangle_mesh;
+  return std::vector<TesseractPhysxGeometryHolder>();
 }
 
-//CollisionGeometryPtr createShapePrimitive(const tesseract_geometry::Octree::ConstPtr& geom)
-//{
-//  switch (geom->getSubType())
-//  {
-//    case tesseract_geometry::Octree::SubType::BOX:
-//    {
-//      return CollisionGeometryPtr(new fcl::OcTreed(geom->getOctree()));
-//    }
-//    default:
-//    {
-//      CONSOLE_BRIDGE_logError("This fcl octree sub shape type (%d) is not supported for geometry octree",
-//                              static_cast<int>(geom->getSubType()));
-//      return nullptr;
-//    }
-//  }
-//}
-
-physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, const CollisionShapeConstPtr& geom)
+std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysx& tesseract_physx,
+                                                               const CollisionShapeConstPtr& geom)
 {
   switch (geom->getType())
   {
@@ -216,15 +340,16 @@ physx::PxGeometryHolder createShapePrimitive(TesseractPhysx& tesseract_physx, co
     {
       return createShapePrimitive(tesseract_physx, std::static_pointer_cast<const tesseract_geometry::ConvexMesh>(geom));
     }
-//    case tesseract_geometry::GeometryType::OCTREE:
-//    {
-//      return createShapePrimitive(tesseract_physx, std::static_pointer_cast<const tesseract_geometry::Octree>(geom));
-//    }
+    case tesseract_geometry::GeometryType::OCTREE:
+    {
+      return createShapePrimitive(tesseract_physx, std::static_pointer_cast<const tesseract_geometry::Octree>(geom));
+    }
     default:
     {
       CONSOLE_BRIDGE_logError("This geometric shape type (%d) is not supported using fcl yet",
                               static_cast<int>(geom->getType()));
-      return physx::PxGeometryHolder();
+
+      return std::vector<TesseractPhysxGeometryHolder>();
     }
   }
 }

@@ -23,6 +23,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_collision_physx/tesseract_simulation_event_callback.h>
+#include <tesseract_collision_physx/tesseract_simulation_filter_callback.h>
 #include <tesseract_collision/core/types.h>
 
 namespace tesseract_collision
@@ -55,6 +56,8 @@ public:
   void setupFiltering(physx::PxRigidActor* actor,
                       const physx::PxFilterData& filter_data);
 
+  void setIsContactAllowedFn(IsContactAllowedFn fn);
+
 private:
   physx::PxDefaultAllocator		default_allocator_;
   physx::PxDefaultErrorCallback	error_callback_;
@@ -68,8 +71,10 @@ private:
   physx::PxPvd*                  pvd_{nullptr};
   std::string                    pvd_host_ {"127.0.0.1"};
 
-  TesseractSimulationEventCallback::Ptr event_cb_;
   ContactTestData contact_data_;
+
+  TesseractSimulationEventCallback::Ptr event_cb_;
+  TesseractSimulationFilterCallback::Ptr filter_cb_;
 
   void initialize();
 };
