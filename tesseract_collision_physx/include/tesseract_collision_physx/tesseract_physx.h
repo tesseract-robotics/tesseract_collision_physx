@@ -38,7 +38,12 @@ public:
   using Ptr = std::shared_ptr<TesseractPhysx>;
   using ConstPtr = std::shared_ptr<const TesseractPhysx>;
 
-  TesseractPhysx();
+  /**
+   * @brief TesseractPhysx
+   * @param worker_threads The number of worker threads created for each scene.
+   * @param enable_gpu Enable GPU functionality
+   */
+  TesseractPhysx(int worker_threads = 2, bool enable_gpu = false);
   virtual ~TesseractPhysx();
 
   TesseractPhysx(const TesseractPhysx&) = delete;
@@ -50,6 +55,19 @@ public:
   physx::PxPhysics* getPhysics();
   physx::PxCooking* getCooking();
   physx::PxMaterial* getMaterial() const;
+  physx::PxCudaContextManager* getCudaContextManager();
+
+  /**
+   * @brief Check if GPU is enable
+   * @return True if GPU is being used, otherwise false
+   */
+  bool useGPU() const;
+
+  /**
+   * @brief The number of worker threads per scene
+   * @return number of worker threads per scene
+   */
+  int getWorkerThreadCount() const;
 
   physx::PxDefaultAllocator& getAllocator();
   const physx::PxDefaultErrorCallback& getErrorCallback();
@@ -62,9 +80,11 @@ private:
   physx::PxPhysics*              physics_ {nullptr};
   physx::PxCooking*              cooking_ {nullptr};
   physx::PxPvd*                  pvd_ {nullptr};
+  physx::PxCudaContextManager*   cuda_ {nullptr};
   std::string                    pvd_host_ {"127.0.0.1"};
   physx::PxMaterial*				     material_{nullptr};
   std::thread::id                thread_id_;
+  int                            worker_threads_ {2};
 };
 }
 #endif // TESSERACT_COLLISION_PHYSX_TESSERACT_PHYSX_H

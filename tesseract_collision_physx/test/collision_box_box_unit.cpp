@@ -16,7 +16,7 @@ TEST(TesseractCollisionUnit, PhysxDiscreteCollisionBoxBoxUnit)  // NOLINT
 
 TEST(TesseractCollisionUnit, PhysxDiscreteCollisionBoxBoxConvexHullUnit)  // NOLINT
 {
-  PhysxDiscreteManager checker;
+  PhysxDiscreteManager checker(2, true);
   test_suite::runTest(checker, true);
 }
 

@@ -12,7 +12,19 @@ set(PHYSX_ROOT_DIR /home/larmstrong/catkin_ws/trajopt_only_ws/src/PhysX/physx/in
 #message(FATAL_ERROR ${PHYSX_ROOT_DIR})
 
 link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/debug)
-set(PHYSX_LIBRARIES libPhysXExtensions_static_64.a libPhysX_static_64.a libPhysXPvdSDK_static_64.a libPhysXVehicle_static_64.a libPhysXCharacterKinematic_static_64.a libPhysXCooking_static_64.a libPhysXCommon_static_64.a libPhysXFoundation_static_64.a)
+set(PHYSX_LIBRARIES
+  libPhysXExtensions_static_64.a
+  libPhysX_static_64.a
+  libPhysXPvdSDK_static_64.a
+  libPhysXVehicle_static_64.a
+  libPhysXCharacterKinematic_static_64.a
+  libPhysXCooking_static_64.a
+  libPhysXCommon_static_64.a
+  libPhysXFoundation_static_64.a)
+
+# NOTE: must add the path below to your environment variable LD_LIBRARY_PATH so it will find PhysX GPU shared library
+# Path: /home/larmstrong/catkin_ws/trajopt_only_ws/src/PhysX/physx/bin/linux.clang/debug
+
 add_library(${PROJECT_NAME} SHARED
   src/tesseract_physx.cpp
   src/tesseract_physx_scene.cpp

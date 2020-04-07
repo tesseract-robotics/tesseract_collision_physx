@@ -25,7 +25,9 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 namespace tesseract_collision
 {
 
-TesseractPhysx::TesseractPhysx() : thread_id_(std::this_thread::get_id())
+TesseractPhysx::TesseractPhysx(int worker_threads, bool enable_gpu)
+  : thread_id_(std::this_thread::get_id())
+  , worker_threads_(worker_threads)
 {
   foundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, default_allocator_, error_callback_);
   if(!foundation_)
@@ -39,11 +41,23 @@ TesseractPhysx::TesseractPhysx() : thread_id_(std::this_thread::get_id())
   if(!physics_)
     CONSOLE_BRIDGE_logError("PxCreatePhysics failed!");
 
+#ifdef PX_SUPPORT_GPU_PHYSX
+  if (enable_gpu)
+  {
+    physx::PxCudaContextManagerDesc cuda_desc;
+    cuda_ = PxCreateCudaContextManager(*foundation_, cuda_desc);
+  }
+#else
+  UNUSED(enable_gpu);
+#endif
+
   // The PhysX cooking library provides utilities for creating, converting, and serializing bulk data. Depending on
   // your application, you may wish to link to the cooking library in order to process such data at runtime.
   // Alternatively you may be able to process all such data in advance and just load it into memory as required.
   // Initialize the cooking library as follows:
-  cooking_ = PxCreateCooking(PX_PHYSICS_VERSION, *foundation_, physx::PxCookingParams(physx::PxTolerancesScale()));
+  physx::PxCookingParams cooking_desc((physx::PxTolerancesScale()));
+  cooking_desc.buildGPUData = (cuda_ != nullptr);
+  cooking_ = PxCreateCooking(PX_PHYSICS_VERSION, *foundation_, cooking_desc);
   if (!cooking_)
       CONSOLE_BRIDGE_logError("PxCreateCooking failed!");
 
@@ -70,6 +84,8 @@ TesseractPhysx::~TesseractPhysx()
 
   PxCloseExtensions();
 
+  PX_RELEASE(cuda_);
+
   PX_RELEASE(foundation_);
 }
 
@@ -77,8 +93,12 @@ physx::PxFoundation* TesseractPhysx::getFoundation() { return foundation_; }
 physx::PxPhysics* TesseractPhysx::getPhysics() { return physics_; }
 physx::PxCooking* TesseractPhysx::getCooking() { return cooking_; }
 physx::PxMaterial* TesseractPhysx::getMaterial() const { return material_; }
-
+physx::PxCudaContextManager* TesseractPhysx::getCudaContextManager() { return cuda_; }
 physx::PxDefaultAllocator& TesseractPhysx::getAllocator() { return default_allocator_; }
 const physx::PxDefaultErrorCallback& TesseractPhysx::getErrorCallback() { return error_callback_; }
+
+bool TesseractPhysx::useGPU() const { return cuda_ != nullptr; }
+
+int TesseractPhysx::getWorkerThreadCount() const { return worker_threads_; }
 
 }

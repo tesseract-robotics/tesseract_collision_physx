@@ -130,6 +130,14 @@ physx::PxGeometryHolder createConvexShapePrimitive(TesseractPhysxScene& physx_sc
   convex_desc.points.data = vertices;
   convex_desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
 
+  if (physx_scene.getTesseractPhysx()->useGPU())
+  {
+    // This will make the convex shape GPU compatible which means the geometry will change. The question is how does
+    // it change the geometry. Is it conservative by make sure all of the orginal vertices are within the new convex
+    // hull?
+    convex_desc.flags |= physx::PxConvexFlag::eGPU_COMPATIBLE;
+  }
+
   physx::PxDefaultMemoryOutputStream buf;
   physx::PxConvexMeshCookingResult::Enum result;
   if(!physx_scene.getTesseractPhysx()->getCooking()->cookConvexMesh(convex_desc, buf, &result))
