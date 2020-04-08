@@ -25,22 +25,18 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 namespace tesseract_collision
 {
 
-TesseractPhysx::TesseractPhysx(int worker_threads,
-                               bool enable_gpu,
-                               bool debug,
-                               std::string pvd_host,
-                               int pvd_port)
+TesseractPhysx::TesseractPhysx(TesseractPhysxDesc desc)
   : thread_id_(std::this_thread::get_id())
-  , worker_threads_(worker_threads)
+  , desc_(desc)
 {
   foundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, default_allocator_, error_callback_);
   if(!foundation_)
       CONSOLE_BRIDGE_logError("PxCreateFoundation failed!");
 
-  if (debug)
+  if (desc_.debug)
   {
     pvd_ = physx::PxCreatePvd(*foundation_);
-    physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate(pvd_host.c_str(), pvd_port, 10);
+    physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate(desc_.pvd_host.c_str(), desc_.pvd_port, 10);
     pvd_->connect(*transport,physx::PxPvdInstrumentationFlag::eALL);
   }
 
@@ -49,14 +45,14 @@ TesseractPhysx::TesseractPhysx(int worker_threads,
     CONSOLE_BRIDGE_logError("PxCreatePhysics failed!");
 
 #ifdef PX_SUPPORT_GPU_PHYSX
-  if (enable_gpu)
-  {
-    physx::PxCudaContextManagerDesc cuda_desc;
-    cuda_ = PxCreateCudaContextManager(*foundation_, cuda_desc);
-  }
+  if (desc_.enable_gpu)
+    cuda_ = PxCreateCudaContextManager(*foundation_, desc_.cuda_desc);
 #else
   UNUSED(enable_gpu);
 #endif
+
+  // If cuda setup failed disable gpu
+  desc_.enable_gpu = (cuda_ != nullptr);
 
   // The PhysX cooking library provides utilities for creating, converting, and serializing bulk data. Depending on
   // your application, you may wish to link to the cooking library in order to process such data at runtime.
@@ -103,11 +99,5 @@ physx::PxMaterial* TesseractPhysx::getMaterial() const { return material_; }
 physx::PxCudaContextManager* TesseractPhysx::getCudaContextManager() { return cuda_; }
 physx::PxDefaultAllocator& TesseractPhysx::getAllocator() { return default_allocator_; }
 const physx::PxDefaultErrorCallback& TesseractPhysx::getErrorCallback() { return error_callback_; }
-
-bool TesseractPhysx::useGPU() const { return cuda_ != nullptr; }
-
-int TesseractPhysx::getWorkerThreadCount() const { return worker_threads_; }
-
-bool TesseractPhysx::isDebug() const { return pvd_ != nullptr; }
-
+const TesseractPhysxDesc& TesseractPhysx::getDescription() { return desc_; }
 }

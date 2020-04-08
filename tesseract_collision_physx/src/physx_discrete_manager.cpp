@@ -25,8 +25,8 @@ namespace tesseract_collision
 static const CollisionShapesConst EMPTY_COLLISION_SHAPES_CONST;
 static const tesseract_common::VectorIsometry3d EMPTY_COLLISION_SHAPES_TRANSFORMS;
 
-PhysxDiscreteManager::PhysxDiscreteManager(int worker_threads, bool enable_gpu)
-  : physx_scene_(std::make_shared<TesseractPhysxScene>(std::make_shared<TesseractPhysx>(worker_threads, enable_gpu)))
+PhysxDiscreteManager::PhysxDiscreteManager(TesseractPhysxDesc desc)
+  : physx_scene_(std::make_shared<TesseractPhysxScene>(std::make_shared<TesseractPhysx>(desc)))
 {
 }
 

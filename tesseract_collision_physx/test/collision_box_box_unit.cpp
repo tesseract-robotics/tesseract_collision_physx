@@ -16,7 +16,9 @@ TEST(TesseractCollisionUnit, PhysxDiscreteCollisionBoxBoxUnit)  // NOLINT
 
 TEST(TesseractCollisionUnit, PhysxDiscreteCollisionBoxBoxConvexHullUnit)  // NOLINT
 {
-  PhysxDiscreteManager checker(2, true);
+  TesseractPhysxDesc desc;
+  desc.enable_gpu = true;
+  PhysxDiscreteManager checker(desc);
   test_suite::runTest(checker, true);
 }
 

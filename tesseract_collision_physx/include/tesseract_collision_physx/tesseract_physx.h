@@ -26,8 +26,34 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 namespace tesseract_collision
 {
 
+struct TesseractPhysxDesc
+{
+  /** @brief The number of worker threads created for each scene. */
+  int worker_threads {2};
+
+  /** @brief Enable GPU functionality */
+  bool enable_gpu {false};
+
+  /** @brief Data structure used to initialize cuda functionality */
+  physx::PxCudaContextManagerDesc cuda_desc;
+
+  /** @brief Enable Physx Debug functionality */
+  bool debug {false};
+  std::string pvd_host {"127.0.0.1"};
+  int pvd_port {5425};
+
+  /** @brief PxCookingParams::midphaseDesc can be used to select the desired mid-phase structure. It is a good idea to try the different options and see which one works best for you. Generally speaking the new PxMeshMidPhase::eBVH34 introduced in PhysX 3.4 has better performance for scene queries against large triangle meshes. */
+  physx::PxMidphaseDesc mid_phase_desc;
+
+  /** @brief PhysX also supports three different broad-phase implementations, selected with PxSceneDesc::broadPhaseType. The different implementations have various performance characteristics, and it is a good idea to experiment with them and find which one works best for you. */
+  physx::PxBroadPhaseType::Enum broad_phase_algorithm { physx::PxBroadPhaseType::eABP };
+
+  /** @brief If the PxScene::fetchResults call takes a significant amount of time in scenes containing a lot of dynamic objects, try to increase the PxSceneDesc::dynamicTreeRebuildRateHint parameter. */
+  int dynamic_tree_rebuild_rate_hint { 100 };
+};
+
 /**
- * @brief Tesseract Physx only allowrf one copy per thread.
+ * @brief Tesseract Physx only allow one copy per thread.
  *
  * This contains PhysX components that are only allowed once per thread. It is currently unclear if this is allowed to
  * be shared between threads.
@@ -43,11 +69,7 @@ public:
    * @param worker_threads The number of worker threads created for each scene.
    * @param enable_gpu Enable GPU functionality
    */
-  TesseractPhysx(int worker_threads = 2,
-                 bool enable_gpu = false,
-                 bool debug = false,
-                 std::string pvd_host = "127.0.0.1",
-                 int pvd_port = 5425);
+  TesseractPhysx(TesseractPhysxDesc desc = TesseractPhysxDesc());
 
   virtual ~TesseractPhysx();
 
@@ -63,22 +85,10 @@ public:
   physx::PxCudaContextManager* getCudaContextManager();
 
   /**
-   * @brief Check if GPU is enable
-   * @return True if GPU is being used, otherwise false
+   * @brief Get the description information used during setup
+   * @return TesseractPhysxDesc
    */
-  bool useGPU() const;
-
-  /**
-   * @brief The number of worker threads per scene
-   * @return number of worker threads per scene
-   */
-  int getWorkerThreadCount() const;
-
-  /**
-   * @brief Check if Debug is enabled
-   * @return True if Debug is enabled, otherwise false
-   */
-  bool isDebug() const;
+  const TesseractPhysxDesc& getDescription();
 
   physx::PxDefaultAllocator& getAllocator();
   const physx::PxDefaultErrorCallback& getErrorCallback();
@@ -94,7 +104,7 @@ private:
   physx::PxCudaContextManager*   cuda_ {nullptr};
   physx::PxMaterial*				     material_{nullptr};
   std::thread::id                thread_id_;
-  int                            worker_threads_ {2};
+  TesseractPhysxDesc             desc_;
 };
 }
 #endif // TESSERACT_COLLISION_PHYSX_TESSERACT_PHYSX_H

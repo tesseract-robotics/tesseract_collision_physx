@@ -62,7 +62,7 @@ TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
 
   physx::PxSceneDesc scene_desc(physx_->getPhysics()->getTolerancesScale());
   scene_desc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
-  dispatcher_ = physx::PxDefaultCpuDispatcherCreate(static_cast<physx::PxU32>(physx_->getWorkerThreadCount()));
+  dispatcher_ = physx::PxDefaultCpuDispatcherCreate(static_cast<physx::PxU32>(physx_->getDescription().worker_threads));
   scene_desc.cpuDispatcher	= dispatcher_;
   scene_desc.kineKineFilteringMode = physx::PxPairFilteringMode::eKEEP; // So kin-kin contacts with be reported
   scene_desc.staticKineFilteringMode = physx::PxPairFilteringMode::eKEEP; // So static-kin constacts will be reported
@@ -70,7 +70,7 @@ TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
   scene_desc.filterShader	= contactReportFilterShader;
   scene_desc.filterCallback = filter_cb_.get();
 
-  if (physx_->useGPU())
+  if (physx_->getDescription().enable_gpu)
   {
     scene_desc.cudaContextManager = physx_->getCudaContextManager();
     scene_desc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;

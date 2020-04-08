@@ -131,7 +131,7 @@ physx::PxGeometryHolder createConvexShapePrimitive(TesseractPhysxScene& physx_sc
   convex_desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
   convex_desc.flags |= physx::PxConvexFlag::eSHIFT_VERTICES;
 
-  if (physx_scene.getTesseractPhysx()->useGPU())
+  if (physx_scene.getTesseractPhysx()->getDescription().enable_gpu)
   {
     // This will make the convex shape GPU compatible which means the geometry will change. The question is how does
     // it change the geometry. Is it conservative by make sure all of the orginal vertices are within the new convex

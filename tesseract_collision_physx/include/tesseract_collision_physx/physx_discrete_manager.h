@@ -29,7 +29,7 @@ public:
   using Ptr = std::shared_ptr<PhysxDiscreteManager>;
   using ConstPtr = std::shared_ptr<const PhysxDiscreteManager>;
 
-  PhysxDiscreteManager(int worker_threads = 2, bool enable_gpu = false);
+  PhysxDiscreteManager(TesseractPhysxDesc desc = TesseractPhysxDesc());
   PhysxDiscreteManager(TesseractPhysx::Ptr tesseract_physx);
 
   ~PhysxDiscreteManager() override = default;

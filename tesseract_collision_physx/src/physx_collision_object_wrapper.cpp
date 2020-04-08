@@ -66,7 +66,7 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
         bool isDynGeom = shape.first.any().getType() == physx::PxGeometryType::eBOX || shape.first.any().getType() == physx::PxGeometryType::eSPHERE || shape.first.any().getType() == physx::PxGeometryType::eCAPSULE || shape.first.any().getType() == physx::PxGeometryType::eCONVEXMESH;
 
         physx::PxShapeFlags shapeFlags;
-        if (physx_scene_->getTesseractPhysx()->isDebug())
+        if (physx_scene_->getTesseractPhysx()->getDescription().debug)
           shapeFlags = physx::PxShapeFlag::eVISUALIZATION | physx::PxShapeFlag::eSCENE_QUERY_SHAPE | physx::PxShapeFlag::eSIMULATION_SHAPE;
         else
           shapeFlags = physx::PxShapeFlag::eSIMULATION_SHAPE;
