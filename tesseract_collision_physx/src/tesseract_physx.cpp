@@ -108,4 +108,6 @@ bool TesseractPhysx::useGPU() const { return cuda_ != nullptr; }
 
 int TesseractPhysx::getWorkerThreadCount() const { return worker_threads_; }
 
+bool TesseractPhysx::isDebug() const { return pvd_ != nullptr; }
+
 }

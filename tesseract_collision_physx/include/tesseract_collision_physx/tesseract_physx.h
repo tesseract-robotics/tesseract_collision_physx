@@ -74,6 +74,12 @@ public:
    */
   int getWorkerThreadCount() const;
 
+  /**
+   * @brief Check if Debug is enabled
+   * @return True if Debug is enabled, otherwise false
+   */
+  bool isDebug() const;
+
   physx::PxDefaultAllocator& getAllocator();
   const physx::PxDefaultErrorCallback& getErrorCallback();
 

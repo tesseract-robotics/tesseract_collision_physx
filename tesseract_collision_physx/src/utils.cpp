@@ -129,6 +129,7 @@ physx::PxGeometryHolder createConvexShapePrimitive(TesseractPhysxScene& physx_sc
   convex_desc.points.stride = sizeof(physx::PxVec3);
   convex_desc.points.data = vertices;
   convex_desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+  convex_desc.flags |= physx::PxConvexFlag::eSHIFT_VERTICES;
 
   if (physx_scene.getTesseractPhysx()->useGPU())
   {
@@ -148,7 +149,9 @@ physx::PxGeometryHolder createConvexShapePrimitive(TesseractPhysxScene& physx_sc
   if (convex_mesh == nullptr)
     return physx::PxGeometryHolder();
 
-  return physx::PxGeometryHolder(physx::PxConvexMeshGeometry(convex_mesh)); // TODO: Who is responsible for releasing triangle_mesh;
+  auto g = physx::PxConvexMeshGeometry(convex_mesh);
+  g.meshFlags |= physx::PxConvexMeshGeometryFlag::eTIGHT_BOUNDS;
+  return physx::PxGeometryHolder(g); // TODO: Who is responsible for releasing triangle_mesh;
 }
 
 //physx::PxGeometryHolder createShapePrimitive(TesseractPhysxScene& physx_scene, const tesseract_geometry::Plane::ConstPtr& geom)

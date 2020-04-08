@@ -65,6 +65,12 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
         // See physx::PxCreateKinematic documentation
         bool isDynGeom = shape.first.any().getType() == physx::PxGeometryType::eBOX || shape.first.any().getType() == physx::PxGeometryType::eSPHERE || shape.first.any().getType() == physx::PxGeometryType::eCAPSULE || shape.first.any().getType() == physx::PxGeometryType::eCONVEXMESH;
 
+        physx::PxShapeFlags shapeFlags;
+        if (physx_scene_->getTesseractPhysx()->isDebug())
+          shapeFlags = physx::PxShapeFlag::eVISUALIZATION | physx::PxShapeFlag::eSCENE_QUERY_SHAPE | physx::PxShapeFlag::eSIMULATION_SHAPE;
+        else
+          shapeFlags = physx::PxShapeFlag::eSIMULATION_SHAPE;
+
         physx::PxShape* s = physx_scene_->getTesseractPhysx()->getPhysics()->createShape(shape.first.any(), *physx_scene_->getTesseractPhysx()->getMaterial(), true);
         if(!s)
         {
