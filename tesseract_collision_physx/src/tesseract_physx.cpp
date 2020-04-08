@@ -25,7 +25,11 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 namespace tesseract_collision
 {
 
-TesseractPhysx::TesseractPhysx(int worker_threads, bool enable_gpu)
+TesseractPhysx::TesseractPhysx(int worker_threads,
+                               bool enable_gpu,
+                               bool debug,
+                               std::string pvd_host,
+                               int pvd_port)
   : thread_id_(std::this_thread::get_id())
   , worker_threads_(worker_threads)
 {
@@ -33,9 +37,12 @@ TesseractPhysx::TesseractPhysx(int worker_threads, bool enable_gpu)
   if(!foundation_)
       CONSOLE_BRIDGE_logError("PxCreateFoundation failed!");
 
-  pvd_ = physx::PxCreatePvd(*foundation_);
-  physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate(pvd_host_.c_str(), 5425, 10);
-  pvd_->connect(*transport,physx::PxPvdInstrumentationFlag::eALL);
+  if (debug)
+  {
+    pvd_ = physx::PxCreatePvd(*foundation_);
+    physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate(pvd_host.c_str(), pvd_port, 10);
+    pvd_->connect(*transport,physx::PxPvdInstrumentationFlag::eALL);
+  }
 
   physics_ = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation_, physx::PxTolerancesScale(), true, pvd_);
   if(!physics_)

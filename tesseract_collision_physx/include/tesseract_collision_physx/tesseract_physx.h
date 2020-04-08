@@ -43,7 +43,12 @@ public:
    * @param worker_threads The number of worker threads created for each scene.
    * @param enable_gpu Enable GPU functionality
    */
-  TesseractPhysx(int worker_threads = 2, bool enable_gpu = false);
+  TesseractPhysx(int worker_threads = 2,
+                 bool enable_gpu = false,
+                 bool debug = false,
+                 std::string pvd_host = "127.0.0.1",
+                 int pvd_port = 5425);
+
   virtual ~TesseractPhysx();
 
   TesseractPhysx(const TesseractPhysx&) = delete;
@@ -81,7 +86,6 @@ private:
   physx::PxCooking*              cooking_ {nullptr};
   physx::PxPvd*                  pvd_ {nullptr};
   physx::PxCudaContextManager*   cuda_ {nullptr};
-  std::string                    pvd_host_ {"127.0.0.1"};
   physx::PxMaterial*				     material_{nullptr};
   std::thread::id                thread_id_;
   int                            worker_threads_ {2};
