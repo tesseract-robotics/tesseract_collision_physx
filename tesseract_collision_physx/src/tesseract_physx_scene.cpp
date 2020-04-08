@@ -69,6 +69,8 @@ TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
   scene_desc.simulationEventCallback = event_cb_.get();
   scene_desc.filterShader	= contactReportFilterShader;
   scene_desc.filterCallback = filter_cb_.get();
+  scene_desc.broadPhaseType = physx_->getDescription().broad_phase_algorithm;
+//  scene_desc.flags |= physx::PxSceneFlag::eENABLE_AVERAGE_POINT;
 
   if (physx_->getDescription().enable_gpu)
   {
@@ -76,6 +78,7 @@ TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
     scene_desc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
     scene_desc.flags |= physx::PxSceneFlag::eENABLE_PCM;
     scene_desc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
+    scene_desc.gpuDynamicsConfig = physx_->getDescription().cuda_dynamics_config;
   }
 
   scene_ = physx_->getPhysics()->createScene(scene_desc);

@@ -60,6 +60,7 @@ TesseractPhysx::TesseractPhysx(TesseractPhysxDesc desc)
   // Initialize the cooking library as follows:
   physx::PxCookingParams cooking_desc((physx::PxTolerancesScale()));
   cooking_desc.buildGPUData = (cuda_ != nullptr);
+  cooking_desc.midphaseDesc = desc_.mid_phase_desc;
   cooking_ = PxCreateCooking(PX_PHYSICS_VERSION, *foundation_, cooking_desc);
   if (!cooking_)
       CONSOLE_BRIDGE_logError("PxCreateCooking failed!");

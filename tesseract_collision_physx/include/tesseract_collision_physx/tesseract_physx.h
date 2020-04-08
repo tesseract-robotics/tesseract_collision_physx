@@ -37,6 +37,9 @@ struct TesseractPhysxDesc
   /** @brief Data structure used to initialize cuda functionality */
   physx::PxCudaContextManagerDesc cuda_desc;
 
+  /** @brief GPU Memory configuration for Dynamic Actors */
+  physx::PxgDynamicsMemoryConfig cuda_dynamics_config;
+
   /** @brief Enable Physx Debug functionality */
   bool debug {false};
   std::string pvd_host {"127.0.0.1"};
