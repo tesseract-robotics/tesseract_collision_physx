@@ -50,7 +50,14 @@ physx::PxFilterFlags contactReportFilterShader(physx::PxFilterObjectAttributes a
   if((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
     return physx::PxFilterFlag::eCALLBACK; // To call the is collision allowed function
 
-  return physx::PxFilterFlag::eDEFAULT;
+  // Ignore the collision pair as long as the bounding volumes of the pair objects overlap.
+  //
+  // Killed pairs will be ignored by the simulation and won't run through the filter again until one
+  // of the following occurs:
+  //
+  //   - The bounding volumes of the two objects overlap again (after being separated)
+  //   - The user enforces a re-filtering (see #PxScene::resetFiltering()) @see PxScene::resetFiltering()
+  return physx::PxFilterFlag::eKILL;
 }
 
 TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
@@ -107,6 +114,10 @@ ContactTestData& TesseractPhysxScene::getContactTestData() { return contact_data
 void TesseractPhysxScene::setupFiltering(physx::PxRigidActor* actor,
                                          const physx::PxFilterData& filter_data)
 {
+  // If filtering changes must reset filtering because we are using the eKill feature in the filter callbacks
+  // and shapes that were once allowed to be incollision may not be anymore.
+  scene_->resetFiltering(*actor);
+
   const physx::PxU32 numShapes = actor->getNbShapes();
   physx::PxShape** shapes = (physx::PxShape**)physx_->getAllocator().allocate(sizeof(physx::PxShape*)*numShapes, nullptr, __FILE__, __LINE__);
   actor->getShapes(shapes, numShapes);

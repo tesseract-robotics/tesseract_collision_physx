@@ -45,8 +45,27 @@ physx::PxFilterFlags TesseractSimulationFilterCallback::pairFound(physx::PxU32 /
   // trigger the contact callback for pairs (A,B) where
   // the filtermask of A contains the ID of B and vice versa.
   if(!contact_data_.done)
+  {
     if (fn_ == nullptr || !fn_(a0->getName(), a1->getName()))
+    {
       pairFlags |= (physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_PERSISTS);
+    }
+    else if (!fn_(a0->getName(), a1->getName()))
+    {
+      pairFlags |= (physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_PERSISTS);
+    }
+    else
+    {
+      // Ignore the collision pair as long as the bounding volumes of the pair objects overlap.
+      //
+      // Killed pairs will be ignored by the simulation and won't run through the filter again until one
+      // of the following occurs:
+      //
+      //   - The bounding volumes of the two objects overlap again (after being separated)
+      //   - The user enforces a re-filtering (see #PxScene::resetFiltering()) @see PxScene::resetFiltering()
+      return physx::PxFilterFlag::eKILL;
+    }
+  }
 
   return physx::PxFilterFlag::eDEFAULT;
 }
