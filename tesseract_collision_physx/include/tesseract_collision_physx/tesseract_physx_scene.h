@@ -40,6 +40,8 @@ namespace tesseract_collision
 class TesseractPhysxScene
 {
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   using Ptr = std::shared_ptr<TesseractPhysxScene>;
   using ConstPtr = std::shared_ptr<const TesseractPhysxScene>;
 
