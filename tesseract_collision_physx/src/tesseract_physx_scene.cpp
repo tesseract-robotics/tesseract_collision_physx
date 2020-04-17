@@ -74,7 +74,7 @@ TesseractPhysxScene::TesseractPhysxScene(TesseractPhysx::Ptr tesseract_physx)
   scene_desc.filterShader	= contactReportFilterShader;
   scene_desc.filterCallback = filter_cb_.get();
   scene_desc.broadPhaseType = physx_->getDescription().broad_phase_algorithm;
-//  scene_desc.flags |= physx::PxSceneFlag::eENABLE_AVERAGE_POINT;
+  scene_desc.dynamicTreeRebuildRateHint = physx_->getDescription().dynamic_tree_rebuild_rate_hint;
 
   if (physx_->getDescription().enable_gpu)
   {

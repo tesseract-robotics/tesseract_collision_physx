@@ -28,8 +28,13 @@ namespace tesseract_collision
 
 struct TesseractPhysxDesc
 {
-  /** @brief The number of worker threads created for each scene. */
-  int worker_threads {2};
+  /**
+   * @brief The number of worker threads created for each scene.
+   *
+   * @note worker_threads may be zero in which case no worker thread are initialized and simulation tasks will be
+   * executed on the thread that calls PxScene::simulate()
+   */
+  int worker_threads {0};
 
   /** @brief Enable GPU functionality */
   bool enable_gpu {false};
@@ -51,8 +56,24 @@ struct TesseractPhysxDesc
   /** @brief PhysX also supports three different broad-phase implementations, selected with PxSceneDesc::broadPhaseType. The different implementations have various performance characteristics, and it is a good idea to experiment with them and find which one works best for you. */
   physx::PxBroadPhaseType::Enum broad_phase_algorithm { physx::PxBroadPhaseType::eABP };
 
-  /** @brief If the PxScene::fetchResults call takes a significant amount of time in scenes containing a lot of dynamic objects, try to increase the PxSceneDesc::dynamicTreeRebuildRateHint parameter. */
-  int dynamic_tree_rebuild_rate_hint { 100 };
+  /**
+   * @brief Hint for how much work should be done per simulation frame to rebuild the pruning structure.
+   *
+   * This parameter gives a hint on the distribution of the workload for rebuilding the dynamic AABB tree
+   * pruning structure #PxPruningStructureType::eDYNAMIC_AABB_TREE. It specifies the desired number of simulation frames
+   * the rebuild process should take. Higher values will decrease the workload per frame but the pruning
+   * structure will get more and more outdated the longer the rebuild takes (which can make
+   * scene queries less efficient).
+   *
+   * @note Only used for #PxPruningStructureType::eDYNAMIC_AABB_TREE pruning structure.
+
+   * @note This parameter gives only a hint. The rebuild process might still take more or less time depending on the
+   * number of objects involved.
+   *
+   * <b>Range:</b> [4, PX_MAX_U32)<br>
+   * <b>Default:</b> 100
+   */
+  physx::PxU32 dynamic_tree_rebuild_rate_hint { 100 };
 };
 
 /**
