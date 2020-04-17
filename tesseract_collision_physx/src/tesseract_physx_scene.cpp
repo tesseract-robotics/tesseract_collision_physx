@@ -42,9 +42,6 @@ physx::PxFilterFlags contactReportFilterShader(physx::PxFilterObjectAttributes a
       return physx::PxFilterFlag::eDEFAULT;
   }
 
-  // generate contacts for all that were not filtered above
-  pairFlags = physx::PxPairFlag::eNOTIFY_CONTACT_POINTS | physx::PxPairFlag::eDETECT_DISCRETE_CONTACT;
-
   // trigger the contact callback for pairs (A,B) where
   // the filtermask of A contains the ID of B and vice versa.
   if((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))

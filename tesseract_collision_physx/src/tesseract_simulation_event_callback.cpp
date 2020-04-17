@@ -60,6 +60,10 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
                                                  physx::PxU32 nbPairs)
 {
   UNUSED(pairHeader);
+  ContactTestData& cdata = physx_scene_->getContactTestData();
+  if (cdata.done)
+    return;
+
   const physx::PxU32 bufferSize = 64;
   physx::PxContactPairPoint contacts[bufferSize];
   for(physx::PxU32 i=0; i < nbPairs; i++)
@@ -123,6 +127,9 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
     contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
     contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
     processResult(physx_scene_->getContactTestData(), contact, pc, found);
+
+    if (cdata.done)
+      return;
   }
 }
 }

@@ -162,7 +162,6 @@ void PhysxDiscreteManager::setCollisionObjectsTransform(const std::string& name,
   {
     PhysxCOW::Ptr& cow = it->second;
     cow->setWorldTransform(pose);
-    dirty_ = true;
   }
 }
 
@@ -229,28 +228,12 @@ void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn)
 }
 
 IsContactAllowedFn PhysxDiscreteManager::getIsContactAllowedFn() const { return fn_; }
-void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const ContactTestType& type)
+void PhysxDiscreteManager::contactTest(ContactResultMap& collisions, const ContactRequest &request)
 {
-  // If you add a new collision object or set its transform you must call simulation twice for some reason.
-  if (dirty_)
-  {
-    dummy_.clear();
-    ContactTestData& cd = physx_scene_->getContactTestData();
-    cd.fn = fn_;
-    cd.active = &active_;
-    cd.type = tesseract_collision::ContactTestType::ALL; // TODO: tesseract_collision::ContactTestType::FIRST
-    cd.res = &dummy_;
-    cd.done = false;
-
-    physx_scene_->getScene()->simulate(SIMULATION_TIME);
-    physx_scene_->getScene()->fetchResults(true);
-    dirty_ = false;
-  }
-
   ContactTestData& cd = physx_scene_->getContactTestData();
   cd.fn = fn_;
   cd.active = &active_;
-  cd.type = type;
+  cd.req = request;
   cd.res = &collisions;
   cd.done = false;
 
@@ -262,7 +245,6 @@ void PhysxDiscreteManager::addCollisionObject(const PhysxCOW::Ptr& cow)
 {
   link2cow_[cow->getName()] = cow;
   collision_objects_.push_back(cow->getName());
-  dirty_ = true;
 }
 
 }  // namespace tesseract_collision

@@ -11,7 +11,7 @@ find_package(tesseract_collision REQUIRED)
 set(PHYSX_ROOT_DIR /home/larmstrong/catkin_ws/trajopt_only_ws/src/PhysX/physx/install/linux)
 #message(FATAL_ERROR ${PHYSX_ROOT_DIR})
 
-link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/debug)
+link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/release)
 set(PHYSX_LIBRARIES
   libPhysXExtensions_static_64.a
   libPhysX_static_64.a

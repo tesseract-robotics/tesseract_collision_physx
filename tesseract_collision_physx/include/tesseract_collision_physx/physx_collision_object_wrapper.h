@@ -46,6 +46,11 @@ public:
                               TesseractPhysxScene::Ptr physx_scene);
 
   ~PhysxCollisionObjectWrapper();
+  PhysxCollisionObjectWrapper(const PhysxCollisionObjectWrapper&) = delete;
+  PhysxCollisionObjectWrapper& operator=(const PhysxCollisionObjectWrapper&) = delete;
+  PhysxCollisionObjectWrapper(PhysxCollisionObjectWrapper&&) = delete;
+  PhysxCollisionObjectWrapper& operator=(PhysxCollisionObjectWrapper&&) = delete;
+
 
   physx::PxFilterData filter_data;
   bool enabled;

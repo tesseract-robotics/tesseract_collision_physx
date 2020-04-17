@@ -100,7 +100,7 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
       actor->setMass(1.f);
       actor->setMassSpaceInertiaTensor(physx::PxVec3(1.f,1.f,1.f));
       actor->userData = this;
-      actor->setName((name + "_" + std::to_string(i)).c_str());
+      actor->setName(name_.c_str()); // Must use a member variable because physx only stores a pointer to a string
       collision_objects_.push_back(actor);
 
 //      physx_->setupFiltering(dyn, static_cast<physx::PxU32>(PhysxFilterGroup::eKINEMATIC), static_cast<physx::PxU32>(PhysxFilterGroup::eSTATIC));
@@ -110,7 +110,6 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
     {
       CONSOLE_BRIDGE_logError("Link was unable to add shape to PhysX for link: %s", name.c_str());
     }
-
   }
 }
 
@@ -158,7 +157,12 @@ void PhysxCollisionObjectWrapper::setWorldTransform(const Eigen::Isometry3d& pos
 {
   world_pose_ = pose;
   for (auto& co : collision_objects_)
-    co->setKinematicTarget(convertEigenToPhysx(world_pose_));
+  {
+    auto t = convertEigenToPhysx(world_pose_);
+    // Using setGlobalPose dose not wake up the actor so no contacts are reports. Adding setKinematicTarget with the same transform wakes up the actor so contacts are reported. If you were to only use setKinematicTarget it would require two calls to simulation to get the contacts at the final stage. Having both solve all the isues and simplifies the code.
+    co->setGlobalPose(t); 
+    co->setKinematicTarget(t);
+  }
 }
 
 void PhysxCollisionObjectWrapper::setContactDistance(physx::PxReal dist)

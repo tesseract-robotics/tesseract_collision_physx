@@ -40,17 +40,16 @@ physx::PxFilterFlags TesseractSimulationFilterCallback::pairFound(physx::PxU32 /
 //  }
 
   // generate contacts for all that were not filtered above
-  pairFlags = physx::PxPairFlag::eNOTIFY_CONTACT_POINTS | physx::PxPairFlag::eDETECT_DISCRETE_CONTACT;
+  if (!contact_data_.req.calculate_distance && !contact_data_.req.calculate_penetration)
+    pairFlags = physx::PxPairFlag::eDETECT_DISCRETE_CONTACT;
+  else
+    pairFlags = physx::PxPairFlag::eNOTIFY_CONTACT_POINTS | physx::PxPairFlag::eDETECT_DISCRETE_CONTACT;
 
   // trigger the contact callback for pairs (A,B) where
   // the filtermask of A contains the ID of B and vice versa.
   if(!contact_data_.done)
   {
     if (fn_ == nullptr || !fn_(a0->getName(), a1->getName()))
-    {
-      pairFlags |= (physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_PERSISTS);
-    }
-    else if (!fn_(a0->getName(), a1->getName()))
     {
       pairFlags |= (physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_PERSISTS);
     }

@@ -39,7 +39,7 @@ public:
   PhysxDiscreteManager& operator=(PhysxDiscreteManager&&) = delete;
 
   static std::string name() { return "PhysxDiscreteManager"; }
-  static PhysxDiscreteManager::Ptr create() { return std::make_shared<PhysxDiscreteManager>(); }
+  static DiscreteContactManager::Ptr create() { return std::make_shared<PhysxDiscreteManager>(); }
 
   /**
    * @brief Clone the PhysxDiscreteManager.
@@ -91,7 +91,7 @@ public:
 
   IsContactAllowedFn getIsContactAllowedFn() const override;
 
-  void contactTest(ContactResultMap& collisions, const ContactTestType& type) override;
+  void contactTest(ContactResultMap& collisions, const ContactRequest& request) override;
 
   /**
    * @brief Add a collision object to the manager
@@ -106,10 +106,8 @@ private:
   IsContactAllowedFn fn_;                      /**< @brief The is allowed collision function */
   TesseractPhysxScene::Ptr physx_scene_;       /**< @brief The tesseract physx scene container */
   Link2PhysxCOW link2cow_;                     /**< @brief A map of all (static and active) physx collision objects managed */
-  bool dirty_ {false};                         /**< @brief Indicates that simulation must be ran twice */
-  ContactResultMap dummy_;                     /**< @brief A dummy contact results used when simulation need to be ran twice */
 
-  friend PhysxCollisionObjectWrapper;
+  friend class PhysxCollisionObjectWrapper;
 };
 
 }  // namespace tesseract_collision
