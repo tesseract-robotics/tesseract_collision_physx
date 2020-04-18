@@ -46,25 +46,19 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
   collision_geometries_.reserve(shapes_.size());
   collision_objects_.reserve(shapes_.size());
 
-  // TODO: Should all objects be added to a single kinematic object?
-  // TODO: Should aggregate be used?
-  // TODO: Should these be different for GPU and CPU? Documentation suggest that they should be.
   for (std::size_t i = 0; i < shapes_.size(); ++i)
   {
     bool has_valid_shapes = true;
     std::vector<TesseractPhysxGeometryHolder> subshapes = createShapePrimitive(*physx_scene_, shapes_[i]);
-    physx::PxRigidDynamic* actor = physx_scene_->getTesseractPhysx()->getPhysics()->createRigidDynamic(physx::PxTransform(physx::PxIdentity));
-    actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
     physx::PxTransform shape_tf = convertEigenToPhysx(shape_poses_[i]);
 
-    long cnt = 0;
     for (auto& shape : subshapes)
     {
+      physx::PxRigidDynamic* actor = physx_scene_->getTesseractPhysx()->getPhysics()->createRigidDynamic(physx::PxTransform(physx::PxIdentity));
+      actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
+
       if (shape.first.getType() != physx::PxGeometryType::Enum::eINVALID)
       {
-        // See physx::PxCreateKinematic documentation
-        bool isDynGeom = shape.first.any().getType() == physx::PxGeometryType::eBOX || shape.first.any().getType() == physx::PxGeometryType::eSPHERE || shape.first.any().getType() == physx::PxGeometryType::eCAPSULE || shape.first.any().getType() == physx::PxGeometryType::eCONVEXMESH;
-
         physx::PxShapeFlags shapeFlags;
         if (physx_scene_->getTesseractPhysx()->getDescription().debug)
           shapeFlags = physx::PxShapeFlag::eVISUALIZATION | physx::PxShapeFlag::eSCENE_QUERY_SHAPE | physx::PxShapeFlag::eSIMULATION_SHAPE;
@@ -75,15 +69,13 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
         if(!s)
         {
           has_valid_shapes = false;
-          continue;
+          s->release();
+          PX_RELEASE(actor);
+          break;
         }
 
         s->setLocalPose(shape_tf * shape.second);
 
-        if(!isDynGeom)
-          s->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-
-        ++cnt;
         actor->attachShape(*s);
 
         s->release();
@@ -91,25 +83,38 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
       else
       {
         has_valid_shapes = false;
+        PX_RELEASE(actor);
+        break;
       }
-    }
 
-    if (has_valid_shapes)
-    {
-      collision_geometries_.push_back(subshapes);
       actor->setMass(1.f);
       actor->setMassSpaceInertiaTensor(physx::PxVec3(1.f,1.f,1.f));
       actor->userData = this;
       actor->setName(name_.c_str()); // Must use a member variable because physx only stores a pointer to a string
       collision_objects_.push_back(actor);
-
-//      physx_->setupFiltering(dyn, static_cast<physx::PxU32>(PhysxFilterGroup::eKINEMATIC), static_cast<physx::PxU32>(PhysxFilterGroup::eSTATIC));
-      physx_scene_->getScene()->addActor(*actor);
+      collision_geometries_.push_back(shape);
     }
-    else
+
+    if (!has_valid_shapes)
     {
       CONSOLE_BRIDGE_logError("Link was unable to add shape to PhysX for link: %s", name.c_str());
+      return;
     }
+  }
+
+  /** @note For GPU it is best to not use aggregate */
+  if (physx_scene_->getTesseractPhysx()->getDescription().enable_gpu)
+  {
+    for (auto* co : collision_objects_)
+      physx_scene_->getScene()->addActor(*co);
+  }
+  else /** @note For CPU it is best to use aggregate */
+  {
+    collision_aggregate_ = physx_scene_->getTesseractPhysx()->getPhysics()->createAggregate(static_cast<physx::PxU32>(collision_objects_.size()), false);
+    for (auto* co : collision_objects_)
+      collision_aggregate_->addActor(*co);
+
+    physx_scene_->getScene()->addAggregate(*collision_aggregate_);
   }
 }
 
@@ -120,6 +125,8 @@ PhysxCollisionObjectWrapper::~PhysxCollisionObjectWrapper()
     PX_RELEASE(collision_objects_[c]);
   }
   collision_objects_.clear();
+
+  PX_RELEASE(collision_aggregate_);
 }
 
 const std::string& PhysxCollisionObjectWrapper::getName() const
@@ -159,7 +166,10 @@ void PhysxCollisionObjectWrapper::setWorldTransform(const Eigen::Isometry3d& pos
   for (auto& co : collision_objects_)
   {
     auto t = convertEigenToPhysx(world_pose_);
-    // Using setGlobalPose dose not wake up the actor so no contacts are reports. Adding setKinematicTarget with the same transform wakes up the actor so contacts are reported. If you were to only use setKinematicTarget it would require two calls to simulation to get the contacts at the final stage. Having both solve all the isues and simplifies the code.
+    // Using setGlobalPose dose not wake up the actor so no contacts are reports. Adding setKinematicTarget with the
+    // same transform wakes up the actor so contacts are reported. If you were to only use setKinematicTarget it would
+    // require two calls to simulation to get the contacts at the final stage. Having both solve all the isues and
+    // simplifies the code.
     co->setGlobalPose(t); 
     co->setKinematicTarget(t);
   }
@@ -232,7 +242,7 @@ PhysxCollisionObjectWrapper::PhysxCollisionObjectWrapper(std::string name,
                                                          const int& type_id,
                                                          CollisionShapesConst shapes,
                                                          tesseract_common::VectorIsometry3d shape_poses,
-                                                         std::vector<std::vector<TesseractPhysxGeometryHolder> > collision_geometries,
+                                                         std::vector<TesseractPhysxGeometryHolder> collision_geometries,
                                                          const std::vector<physx::PxRigidDynamic*>& collision_objects)
   : name_(std::move(name))
   , type_id_(type_id)

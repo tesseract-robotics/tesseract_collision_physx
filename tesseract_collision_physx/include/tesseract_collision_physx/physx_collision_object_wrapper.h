@@ -88,7 +88,7 @@ protected:
                               const int& type_id,
                               CollisionShapesConst shapes,
                               tesseract_common::VectorIsometry3d shape_poses,
-                              std::vector<std::vector<TesseractPhysxGeometryHolder>> collision_geometries,
+                              std::vector<TesseractPhysxGeometryHolder> collision_geometries,
                               const std::vector<physx::PxRigidDynamic*>& collision_objects);
 
   std::string name_;             // name of the collision object
@@ -96,8 +96,9 @@ protected:
   Eigen::Isometry3d world_pose_; /**< @brief Collision Object World Transformation */
   CollisionShapesConst shapes_;
   tesseract_common::VectorIsometry3d shape_poses_;
-  std::vector<std::vector<TesseractPhysxGeometryHolder>> collision_geometries_;
+  std::vector<TesseractPhysxGeometryHolder> collision_geometries_;
   std::vector<physx::PxRigidDynamic*> collision_objects_;
+  physx::PxAggregate* collision_aggregate_;
   TesseractPhysxScene::Ptr physx_scene_;
 };
 
