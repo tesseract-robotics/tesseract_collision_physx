@@ -66,30 +66,5 @@ std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysxSce
 std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysxScene& physx_scene,
                                                                const CollisionShapeConstPtr& geom);
 
-///**
-// * @brief Update collision objects filters
-// * @param active The active collision objects
-// * @param cow The collision object to update
-// */
-//inline void updateCollisionObjectFilters(const std::vector<std::string>& active, COW& cow)
-//{
-//  // For descrete checks we can check static to kinematic and kinematic to
-//  // kinematic
-//  cow.m_collisionFilterGroup = CollisionFilterGroups::KinematicFilter;
-//  if (!isLinkActive(active, cow.getName()))
-//  {
-//    cow.m_collisionFilterGroup = CollisionFilterGroups::StaticFilter;
-//  }
-
-//  if (cow.m_collisionFilterGroup == CollisionFilterGroups::StaticFilter)
-//  {
-//    cow.m_collisionFilterMask = CollisionFilterGroups::KinematicFilter;
-//  }
-//  else
-//  {
-//    cow.m_collisionFilterMask = CollisionFilterGroups::StaticFilter | CollisionFilterGroups::KinematicFilter;
-//  }
-//}
-
 }  // namespace tesseract_collision
 #endif // TESSERACT_COLLISION_PHYSX_UTILS_H

@@ -11,13 +11,19 @@ using namespace tesseract_collision;
 TEST(TesseractCollisionLargeDataSetUnit, PhysxDiscreteCollisionLargeDataSetConvexHullUnit)  // NOLINT
 {
   PhysxDiscreteManager checker;
-  test_suite::runTest(checker, true);
+
+  // The original did 10 iterations, but it looks like if objects are in collision and have not moved after three
+  // simulation steps it stops reporting contacts.
+  test_suite::runTest(checker, true, 3);
 }
 
 TEST(TesseractCollisionLargeDataSetUnit, PhysxDiscreteCollisionLargeDataSetUnit)  // NOLINT
 {
   PhysxDiscreteManager checker;
-  test_suite::runTest(checker);
+
+  // The original did 10 iterations, but it looks like if objects are in collision and have not moved after three
+  // simulation steps it stops reporting contacts.
+  test_suite::runTest(checker, false, 3);
 }
 
 int main(int argc, char** argv)
