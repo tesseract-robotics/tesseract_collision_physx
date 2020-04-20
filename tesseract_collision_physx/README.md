@@ -30,3 +30,17 @@ Platform specific and Install information can be found here:
 [What is GPU Accelerated?](https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Manual/GPURigidBodies.html#what-is-gpu-accelerated)
 [Best Practices GPU](https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Manual/BestPractices.html?highlight=gpu#gpu-rigid-bodies)
 
+## Known Issues
+* Kinematic objects are only guaranteed to be awake for one simulations timestep after setKinematicTarget() is called
+  and then they may go to sleep even if in collision. You must always set the active links transforms even if they have
+  not moved. Through testing it appears you get two more simulation timesteps before it will go to sleep but it is not
+  guaranteed to always be true.
+
+
+## TODO
+* For Mesh and Octomap types we should create PxBVHStructure when adding the actor to the scene or aggregate.
+  * See https://github.com/NVIDIAGameWorks/PhysX/issues/203
+  * https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Manual/SceneQueries.html#pxbvhstructure
+* Update Mesh types to be a single actor with triangles as a convex shape using a PxBVHStructure
+
+
