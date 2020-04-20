@@ -73,8 +73,8 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
 
     ObjectPairKey pc = getObjectPairKey(cd0->getName(), cd1->getName());
 
-    const auto& it = physx_scene_->getContactTestData().res->find(pc);
-    bool found = (it != physx_scene_->getContactTestData().res->end());
+    const auto& it = cdata.res->find(pc);
+    bool found = (it != cdata.res->end());
 
     //    size_t l = 0;
     //    if (found)
@@ -87,70 +87,90 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
 
     Eigen::Isometry3d tf0 = cd0->getWorldTransform();
     Eigen::Isometry3d tf1 = cd1->getWorldTransform();
-    Eigen::Isometry3d tf0_inv = tf0.inverse();
-    Eigen::Isometry3d tf1_inv = tf1.inverse();
 
-    physx::PxContactStreamIterator iter(cp.contactPatches, cp.contactPoints, cp.getInternalFaceIndices(), cp.patchCount, cp.contactCount);
-    physx::PxU32 flipped_contacts = (cp.flags & physx::PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
 
-    // @TODO: I believe each patch should be a contact
-    while(iter.hasNextPatch())
+    if (!cdata.req.calculate_distance && !cdata.req.calculate_penetration)
     {
-      iter.nextPatch();
-      // These contacts are what make up the contact manifold. We will average the contact information for the manifold
       ContactResult contact;
-      contact.single_contact_point = true;
+      contact.distance = 0;
       contact.link_names[0] = cd0->getName();
       contact.link_names[1] = cd1->getName();
-  //    contact.shape_id[0] = colObj0Wrap->getCollisionShape()->getUserIndex();
-  //    contact.shape_id[1] = colObj1Wrap->getCollisionShape()->getUserIndex();
-      // Face Indices are associated with the patch
-      contact.subshape_id[0] = flipped_contacts ? static_cast<int>(iter.getFaceIndex1()) : static_cast<int>(iter.getFaceIndex0());
-      contact.subshape_id[1] = flipped_contacts ? static_cast<int>(iter.getFaceIndex0()) : static_cast<int>(iter.getFaceIndex1());
       contact.transform[0] = tf0;
       contact.transform[1] = tf1;
       contact.type_id[0] = cd0->getTypeID();
       contact.type_id[1] = cd1->getTypeID();
 
-      // The contact normal is associated with the patch
-      contact.normal = -1.0 * convertPhysxToEigen(iter.getContactNormal());
-      while(iter.hasNextContact())
-      {
-        iter.nextContact();
-
-        // @note Originally we were averaging the contact points but this was causing unit tests to fail. After testing
-        // it appears that it should only store the worst case which matches bullet and fcl.
-        if (static_cast<double>(iter.getSeparation()) < contact.distance)
-        {
-            contact.distance = static_cast<double>(iter.getSeparation());
-            contact.nearest_points[1] = convertPhysxToEigen(iter.getContactPoint());
-        }
-      }
-
-      contact.nearest_points[0] = contact.nearest_points[1];
-      contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
-      contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
-
-// @note It does not appear to be possible to know which shape the contact points are associated with, but there is
-//       is an open issue on Physx asking if this is possible.
-//
-//      if (flipped_contacts)
-//      {
-//        contact.nearest_points[0] = contact.nearest_points[1];
-//        contact.nearest_points[1] = contact.nearest_points[0] + (contact.distance * contact.normal);
-//      }
-//      else
-//      {
-//        contact.nearest_points[0] = contact.nearest_points[1] - (contact.distance * contact.normal);
-//      }
-
-//      contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
-//      contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
-
-      processResult(physx_scene_->getContactTestData(), contact, pc, found);
+      processResult(cdata, contact, pc, found);
 
       if (cdata.done)
         return;
+    }
+    else
+    {
+      Eigen::Isometry3d tf0_inv = tf0.inverse();
+      Eigen::Isometry3d tf1_inv = tf1.inverse();
+
+      physx::PxContactStreamIterator iter(cp.contactPatches, cp.contactPoints, cp.getInternalFaceIndices(), cp.patchCount, cp.contactCount);
+      physx::PxU32 flipped_contacts = (cp.flags & physx::PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
+
+      while(iter.hasNextPatch())
+      {
+        iter.nextPatch();
+        // These contacts are what make up the contact manifold. We will average the contact information for the manifold
+        ContactResult contact;
+        contact.single_contact_point = true;
+        contact.link_names[0] = cd0->getName();
+        contact.link_names[1] = cd1->getName();
+    //    contact.shape_id[0] = colObj0Wrap->getCollisionShape()->getUserIndex();
+    //    contact.shape_id[1] = colObj1Wrap->getCollisionShape()->getUserIndex();
+        // Face Indices are associated with the patch
+        contact.subshape_id[0] = flipped_contacts ? static_cast<int>(iter.getFaceIndex1()) : static_cast<int>(iter.getFaceIndex0());
+        contact.subshape_id[1] = flipped_contacts ? static_cast<int>(iter.getFaceIndex0()) : static_cast<int>(iter.getFaceIndex1());
+        contact.transform[0] = tf0;
+        contact.transform[1] = tf1;
+        contact.type_id[0] = cd0->getTypeID();
+        contact.type_id[1] = cd1->getTypeID();
+
+        // The contact normal is associated with the patch
+        contact.normal = -1.0 * convertPhysxToEigen(iter.getContactNormal());
+        while(iter.hasNextContact())
+        {
+          iter.nextContact();
+
+          // @note Originally we were averaging the contact points but this was causing unit tests to fail. After testing
+          // it appears that it should only store the worst case which matches bullet and fcl.
+          if (static_cast<double>(iter.getSeparation()) < contact.distance)
+          {
+              contact.distance = static_cast<double>(iter.getSeparation());
+              contact.nearest_points[1] = convertPhysxToEigen(iter.getContactPoint());
+          }
+        }
+
+        contact.nearest_points[0] = contact.nearest_points[1];
+        contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
+        contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
+
+  // @note It does not appear to be possible to know which shape the contact points are associated with, but there is
+  //       is an open issue on Physx asking if this is possible.
+  //
+  //      if (flipped_contacts)
+  //      {
+  //        contact.nearest_points[0] = contact.nearest_points[1];
+  //        contact.nearest_points[1] = contact.nearest_points[0] + (contact.distance * contact.normal);
+  //      }
+  //      else
+  //      {
+  //        contact.nearest_points[0] = contact.nearest_points[1] - (contact.distance * contact.normal);
+  //      }
+
+  //      contact.nearest_points_local[0] = tf0_inv * contact.nearest_points[0];
+  //      contact.nearest_points_local[1] = tf1_inv * contact.nearest_points[1];
+
+        processResult(cdata, contact, pc, found);
+
+        if (cdata.done)
+          return;
+      }
     }
   }
 }
