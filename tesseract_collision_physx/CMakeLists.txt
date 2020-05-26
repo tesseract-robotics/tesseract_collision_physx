@@ -84,3 +84,7 @@ if (TESSERACT_ENABLE_TESTING)
   tesseract_add_run_tests_target()
   add_subdirectory(test)
 endif()
+
+if (TESSERACT_ENABLE_BENCHMARKING)
+  add_subdirectory(test/benchmarks)
+endif()
