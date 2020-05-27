@@ -107,7 +107,7 @@ private:
   TesseractPhysxScene::Ptr physx_scene_;       /**< @brief The tesseract physx scene container */
   Link2PhysxCOW link2cow_;                     /**< @brief A map of all (static and active) physx collision objects managed */
 
-  friend class PhysxCollisionObjectWrapper;
+//  friend class PhysxCollisionObjectWrapper;
 };
 
 }  // namespace tesseract_collision

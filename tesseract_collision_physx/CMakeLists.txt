@@ -8,20 +8,14 @@ find_package(tesseract_geometry REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_collision REQUIRED)
 
-# Testing set Physx root
+# Create imported target physx::physx
+add_library(physx::physx INTERFACE IMPORTED)
 set(PHYSX_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/physx_41/linux)
-
-link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/release)
-set(PHYSX_LIBRARIES
-  libPhysXExtensions_static_64.a
-  libPhysX_static_64.a
-  libPhysXPvdSDK_static_64.a
-  libPhysXVehicle_static_64.a
-  libPhysXCharacterKinematic_static_64.a
-  libPhysXCooking_static_64.a
-  libPhysXCommon_static_64.a
-  libPhysXFoundation_static_64.a
-  libPhysXGpu_64.so)
+set(PHYSX_LIBRARY_DIR ${PHYSX_ROOT_DIR}/PhysX/bin/release)
+set_target_properties(physx::physx PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${PHYSX_ROOT_DIR}/PhysX/include;${PHYSX_ROOT_DIR}/PxShared/include"
+  INTERFACE_LINK_LIBRARIES "${PHYSX_LIBRARY_DIR}/libPhysXExtensions_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysX_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXPvdSDK_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXVehicle_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXCharacterKinematic_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXCooking_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXCommon_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXFoundation_static_64.a;${PHYSX_LIBRARY_DIR}/libPhysXGpu_64.so"
+)
 
 add_library(${PROJECT_NAME} SHARED
   src/tesseract_physx.cpp
@@ -31,16 +25,12 @@ add_library(${PROJECT_NAME} SHARED
   src/physx_collision_object_wrapper.cpp
   src/utils.cpp
   src/physx_discrete_manager.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC tesseract::tesseract_collision_core tesseract::tesseract_geometry console_bridge ${PHYSX_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PUBLIC tesseract::tesseract_collision_core tesseract::tesseract_geometry console_bridge physx::physx ${CMAKE_DL_LIBS})
 tesseract_target_compile_options(${PROJECT_NAME} PUBLIC)
 tesseract_clang_tidy(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include>"
-    "$<BUILD_INTERFACE:${PHYSX_ROOT_DIR}/PhysX/include>"
-    "$<BUILD_INTERFACE:${PHYSX_ROOT_DIR}/PxShared/include>"
-    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}/PhysX>"
-    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}/PxShared>")
+    "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${OCTOMAP_INCLUDE_DIRS})
