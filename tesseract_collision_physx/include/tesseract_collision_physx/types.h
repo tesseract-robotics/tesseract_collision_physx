@@ -35,14 +35,6 @@ enum class PhysxFilterGroup
   DISABLED   = (1 << 3)
 };
 
-//enum CollisionFilterGroups
-//{
-//  DefaultFilter = 1,
-//  StaticFilter = 2,
-//  KinematicFilter = 4,
-//  AllFilter = -1  // all bits sets: DefaultFilter | StaticFilter | KinematicFilter
-//};
-
 }
 
 #endif // TESSERACT_COLLISION_PHYSX_TYPES_H

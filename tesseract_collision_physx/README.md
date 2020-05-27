@@ -4,7 +4,7 @@ This package supports both CPU and GPU functionality of PhysX.
 
 ## CPU
 
-Currently there are known know limitation when using the CPU.
+Currently there are no known limitation when using the CPU.
 
 ## GPU
 Currently when using the GPU there are some limitation because it must pre-allocate space.
@@ -24,6 +24,24 @@ Platform specific and Install information can be found here:
 * [Google Android ARM](http://gameworksdocs.nvidia.com/PhysX/4.1/documentation/platformreadme/android/readme_android.html)
 * [Apple macOS](http://gameworksdocs.nvidia.com/PhysX/4.1/documentation/platformreadme/mac/readme_mac.html)
 * [Apple iOS](http://gameworksdocs.nvidia.com/PhysX/4.1/documentation/platformreadme/ios/readme_ios.html)
+
+## PhysX Installation
+
+This is optional for CPU since the static libraries are included in this repository. For GPU you must build from source.
+
+* Install CMake 3.12
+  * Clone CMake
+  * mdkir build && cd build && cmake .. && make
+  * sudo checkinstall --pkgname=cmake312
+  * cmake --version
+* Install PhysX
+  * Clone PhysX
+  * Run setup script: ./Physx/physx/generate_setup.sh
+  * cd PhysX/physx/compiler/linux-release && make
+  * Change tesseract_collision_physx cmake line 11 to my path:
+    * `set(PHYSX_ROOT_DIR /home/ros-industrial/workspaces/realtime_ros2/src/PhysX/physx/install/linux)`
+  * Changeline 14 to release. I must have built it in release.
+    * `link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/release)`
 
 ## Developers Links
 [GPU Rigid Bodies](https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Manual/GPURigidBodies.html#gpu-rigid-bodies)

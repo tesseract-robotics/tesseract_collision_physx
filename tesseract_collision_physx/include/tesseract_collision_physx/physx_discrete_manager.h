@@ -22,7 +22,7 @@
 namespace tesseract_collision
 {
 
-/** @brief A simple implementaiton of a bullet manager which does not use BHV */
+/** @brief An implementaiton of a PhysX discrete contact manager with both CPU and GPU support */
 class PhysxDiscreteManager : public DiscreteContactManager
 {
 public:

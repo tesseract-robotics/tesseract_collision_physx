@@ -2,16 +2,16 @@ cmake_minimum_required(VERSION 3.5.0)
 project(tesseract_collision_physx VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(Eigen3 REQUIRED)
+find_package(octomap REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(tesseract_geometry REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_collision REQUIRED)
 
 # Testing set Physx root
-set(PHYSX_ROOT_DIR /home/larmstrong/catkin_ws/trajopt_only_ws/src/PhysX/physx/install/linux)
-#message(FATAL_ERROR ${PHYSX_ROOT_DIR})
+set(PHYSX_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/physx_41/linux)
 
-link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/linux.clang/release)
+link_directories(${PHYSX_ROOT_DIR}/PhysX/bin/release)
 set(PHYSX_LIBRARIES
   libPhysXExtensions_static_64.a
   libPhysX_static_64.a
@@ -20,10 +20,8 @@ set(PHYSX_LIBRARIES
   libPhysXCharacterKinematic_static_64.a
   libPhysXCooking_static_64.a
   libPhysXCommon_static_64.a
-  libPhysXFoundation_static_64.a)
-
-# NOTE: must add the path below to your environment variable LD_LIBRARY_PATH so it will find PhysX GPU shared library
-# Path: /home/larmstrong/catkin_ws/trajopt_only_ws/src/PhysX/physx/bin/linux.clang/debug
+  libPhysXFoundation_static_64.a
+  libPhysXGpu_64.so)
 
 add_library(${PROJECT_NAME} SHARED
   src/tesseract_physx.cpp
@@ -38,12 +36,14 @@ tesseract_target_compile_options(${PROJECT_NAME} PUBLIC)
 tesseract_clang_tidy(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include>")
+    "$<INSTALL_INTERFACE:include>"
+    "$<BUILD_INTERFACE:${PHYSX_ROOT_DIR}/PhysX/include>"
+    "$<BUILD_INTERFACE:${PHYSX_ROOT_DIR}/PxShared/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}/PhysX>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}/PxShared>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
-    ${OCTOMAP_INCLUDE_DIRS}
-    ${PHYSX_ROOT_DIR}/PhysX/include
-    ${PHYSX_ROOT_DIR}/PxShared/include)
+    ${OCTOMAP_INCLUDE_DIRS})
 
 # Create target that profiles the collision checkers.
 add_executable(${PROJECT_NAME}_demo src/test.cpp)
@@ -71,6 +71,27 @@ tesseract_configure_package(${PROJECT_NAME} ${PROJECT_NAME}_demo ${PROJECT_NAME}
 install(DIRECTORY include/${PROJECT_NAME}
   DESTINATION include
   FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+ )
+
+# Install Third Party PhysX includes
+install(DIRECTORY third_party/physx_41/linux/PhysX/include/
+  DESTINATION include/${PROJECT_NAME}/PhysX
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+ )
+
+# Install Third Party PhysX PxShared includes
+install(DIRECTORY third_party/physx_41/linux/PxShared/include/
+  DESTINATION include/${PROJECT_NAME}/PxShared
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+ )
+
+# Install Third Party PhysX libraries
+install(DIRECTORY third_party/physx_41/linux/PhysX/bin/release/
+  DESTINATION lib
+  FILES_MATCHING PATTERN "*.a" PATTERN "*.so"
   PATTERN ".svn" EXCLUDE
  )
 

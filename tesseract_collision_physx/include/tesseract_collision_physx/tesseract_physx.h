@@ -47,7 +47,11 @@ struct TesseractPhysxDesc
 
   /** @brief Enable Physx Debug functionality */
   bool debug {false};
+
+  /** @brief IP Address to the PhysX Visual Debugger (PVD) Application */
   std::string pvd_host {"127.0.0.1"};
+
+  /** @brief IP Port used for PhysX Visual Debugger (PVD), should be same as the port setting in PVD Application. */
   int pvd_port {5425};
 
   /** @brief PxCookingParams::midphaseDesc can be used to select the desired mid-phase structure. It is a good idea to try the different options and see which one works best for you. Generally speaking the new PxMeshMidPhase::eBVH34 introduced in PhysX 3.4 has better performance for scene queries against large triangle meshes. */
