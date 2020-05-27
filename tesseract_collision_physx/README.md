@@ -27,7 +27,7 @@ Platform specific and Install information can be found here:
 
 ## PhysX Installation
 
-This is optional for CPU since the static libraries are included in this repository. For GPU you must build from source.
+This is optional for CPU and GPU since the static and dynamic libraries are included in this repository for linux.
 
 * Install CMake 3.12
   * Clone CMake
