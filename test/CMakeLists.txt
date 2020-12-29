@@ -12,15 +12,15 @@ find_package(tesseract_scene_graph REQUIRED)
 macro(add_gtest test_name test_file)
   add_executable(${test_name} ${test_file})
   target_link_libraries(${test_name} PRIVATE GTest::GTest ${PROJECT_NAME} GTest::Main tesseract::tesseract_collision_test_suite tesseract::tesseract_geometry tesseract::tesseract_scene_graph console_bridge ${BULLET_LIBRARIES}  ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES})
-  tesseract_target_compile_options(${test_name} PRIVATE)
-  tesseract_clang_tidy(${test_name})
-  tesseract_code_coverage(${test_name} ALL EXCLUDE ${COVERAGE_EXCLUDE})
-  tesseract_gtest_discover_tests(${test_name})
+  target_compile_options(${test_name} PRIVATE ${TESSERACT_COMPILE_OPTIONS_PRIVATE} ${TESSERACT_COMPILE_OPTIONS_PUBLIC})
+  target_clang_tidy(${test_name} ARGUMENTS ${TESSERACT_CLANG_TIDY_ARGS} ENABLE ${TESSERACT_ENABLE_CLANG_TIDY})
+  target_cxx_version(${test_name} PRIVATE VERSION ${TESSERACT_CXX_VERSION})
   target_include_directories(${test_name} SYSTEM PUBLIC
       ${BULLET_INCLUDE_DIRS}
       ${Boost_INCLUDE_DIRS}
       ${OCTOMAP_INCLUDE_DIRS})
 
+  add_gtest_discover_tests(${test_name})
   add_dependencies(${test_name} ${PROJECT_NAME})
   add_dependencies(run_tests ${test_name})
 endmacro()

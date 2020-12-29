@@ -39,21 +39,23 @@ DiscreteContactManager::Ptr PhysxDiscreteManager::clone() const
 {
   auto manager = std::make_shared<PhysxDiscreteManager>(physx_scene_->getTesseractPhysx());
 
+  auto max_contact_distance = static_cast<physx::PxReal>(collision_margin_data_.getMaxCollisionMargin());
+
   for (const auto& cow : link2cow_)
   {
     PhysxCOW::Ptr new_cow = cow.second->clone(manager->physx_scene_);
 
     new_cow->setWorldTransform(cow.second->getWorldTransform());
 
-    new_cow->setContactDistance(contact_distance_);
+    new_cow->setContactDistance(max_contact_distance / physx::PxReal(2.));
     manager->addCollisionObject(new_cow);
   }
 
   manager->setActiveCollisionObjects(active_);
-  manager->setContactDistanceThreshold(getContactDistanceThreshold());
+  manager->setCollisionMarginData(collision_margin_data_);
   manager->setIsContactAllowedFn(fn_);
 
-  return std::move(manager);
+  return manager;
 }
 
 bool PhysxDiscreteManager::addCollisionObject(const std::string& name,
@@ -211,16 +213,38 @@ void PhysxDiscreteManager::setActiveCollisionObjects(const std::vector<std::stri
 }
 
 const std::vector<std::string>& PhysxDiscreteManager::getActiveCollisionObjects() const { return active_; }
-void PhysxDiscreteManager::setContactDistanceThreshold(double contact_distance)
-{
-  contact_distance_ = static_cast<physx::PxReal>(contact_distance);
-  physx_scene_->getContactTestData().contact_distance = contact_distance;
 
-  for (auto& co : link2cow_)
-    co.second->setContactDistance(contact_distance_ / physx::PxReal(2.));
+void PhysxDiscreteManager::setCollisionMarginData(CollisionMarginData collision_margin_data)
+{
+  collision_margin_data_ = collision_margin_data;
+  onCollisionMarginDataChanged();
 }
 
-double PhysxDiscreteManager::getContactDistanceThreshold() const { return static_cast<double>(contact_distance_); }
+void PhysxDiscreteManager::setDefaultCollisionMarginData(double default_collision_margin)
+{
+  collision_margin_data_.setDefaultCollisionMarginData(default_collision_margin);
+  onCollisionMarginDataChanged();
+}
+
+void PhysxDiscreteManager::setPairCollisionMarginData(const std::string& name1,
+                                const std::string& name2,
+                                double collision_margin)
+{
+  collision_margin_data_.setPairCollisionMarginData(name1, name2, collision_margin);
+  onCollisionMarginDataChanged();
+}
+
+const CollisionMarginData& PhysxDiscreteManager::getCollisionMarginData() const { return collision_margin_data_; }
+
+void PhysxDiscreteManager::onCollisionMarginDataChanged()
+{
+  auto max_contact_distance = static_cast<physx::PxReal>(collision_margin_data_.getMaxCollisionMargin());
+  physx_scene_->getContactTestData().collision_margin_data = collision_margin_data_;
+
+  for (auto& co : link2cow_)
+    co.second->setContactDistance(max_contact_distance / physx::PxReal(2.));
+}
+
 void PhysxDiscreteManager::setIsContactAllowedFn(IsContactAllowedFn fn)
 {
   fn_ = fn;
