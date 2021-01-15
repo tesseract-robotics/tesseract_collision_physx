@@ -200,14 +200,14 @@ std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysxSce
 
 std::vector<TesseractPhysxGeometryHolder> createShapePrimitive(TesseractPhysxScene& physx_scene, const tesseract_geometry::Mesh::ConstPtr& geom)
 {
-  int v_count = geom->getVerticeCount();
-  int t_count = geom->getTriangleCount();
+  std::size_t v_count = static_cast<std::size_t>(geom->getVerticeCount());
+  std::size_t t_count = static_cast<std::size_t>(geom->getTriangleCount());
   const tesseract_common::VectorVector3d& v = *(geom->getVertices());
   const Eigen::VectorXi& t = *(geom->getTriangles());
 
   physx::PxVec3 vertices[v_count];
-  physx::PxU32 triangles[t.size()];
-  for (std::size_t i = 0; i < static_cast<std::size_t>(v_count); ++i)
+  physx::PxU32 triangles[static_cast<std::size_t>(t.size())];
+  for (std::size_t i = 0; i < v_count; ++i)
   {
     vertices[i].x = static_cast<physx::PxReal>(v[i].x());
     vertices[i].y = static_cast<physx::PxReal>(v[i].y());

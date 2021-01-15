@@ -110,7 +110,10 @@ void TesseractSimulationEventCallback::onContact(const physx::PxContactPairHeade
       Eigen::Isometry3d tf0_inv = tf0.inverse();
       Eigen::Isometry3d tf1_inv = tf1.inverse();
 
+      TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
       physx::PxContactStreamIterator iter(cp.contactPatches, cp.contactPoints, cp.getInternalFaceIndices(), cp.patchCount, cp.contactCount);
+      TESSERACT_COMMON_IGNORE_WARNINGS_POP
+
       physx::PxU32 flipped_contacts = (cp.flags & physx::PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
 
       while(iter.hasNextPatch())
