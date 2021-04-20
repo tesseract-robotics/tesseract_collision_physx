@@ -214,15 +214,16 @@ void PhysxDiscreteManager::setActiveCollisionObjects(const std::vector<std::stri
 
 const std::vector<std::string>& PhysxDiscreteManager::getActiveCollisionObjects() const { return active_; }
 
-void PhysxDiscreteManager::setCollisionMarginData(CollisionMarginData collision_margin_data)
+void PhysxDiscreteManager::setCollisionMarginData(CollisionMarginData collision_margin_data,
+                                                  CollisionMarginOverrideType override_type)
 {
-  collision_margin_data_ = collision_margin_data;
+  collision_margin_data_.apply(collision_margin_data, override_type);
   onCollisionMarginDataChanged();
 }
 
 void PhysxDiscreteManager::setDefaultCollisionMarginData(double default_collision_margin)
 {
-  collision_margin_data_.setDefaultCollisionMarginData(default_collision_margin);
+  collision_margin_data_.setDefaultCollisionMargin(default_collision_margin);
   onCollisionMarginDataChanged();
 }
 
@@ -230,7 +231,7 @@ void PhysxDiscreteManager::setPairCollisionMarginData(const std::string& name1,
                                 const std::string& name2,
                                 double collision_margin)
 {
-  collision_margin_data_.setPairCollisionMarginData(name1, name2, collision_margin);
+  collision_margin_data_.setPairCollisionMargin(name1, name2, collision_margin);
   onCollisionMarginDataChanged();
 }
 

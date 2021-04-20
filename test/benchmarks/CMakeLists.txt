@@ -11,8 +11,7 @@ macro(add_benchmark benchmark_name benchmark_file)
       tesseract::tesseract_collision_test_suite_benchmarks
       ${PROJECT_NAME}
       tesseract::tesseract_geometry
-      console_bridge
-      ${Boost_LIBRARIES}
+      console_bridge::console_bridge
       ${OCTOMAP_LIBRARIES}
       )
   target_include_directories(${benchmark_name} PRIVATE
